@@ -86,9 +86,14 @@
                 activeGameTitle.value = game.title;
                 isGameActive.value = true;
 
-                // 根据文件后缀动态识别类型 (.xp3 -> xp3-url, .zip -> zip-url)
+                // 根据文件后缀动态识别类型 (.json -> json-url, .xp3 -> xp3-url, .zip -> zip-url)
                 const cleanUrl = game.downloadUrl.trim().toLowerCase();
-                const sourceType = (cleanUrl.endsWith('.xp3') || cleanUrl.includes('.xp3?')) ? 'xp3-url' : 'zip-url';
+                let sourceType = 'zip-url';
+                if (cleanUrl.endsWith('.json') || cleanUrl.includes('.json?')) {
+                    sourceType = 'json-url';
+                } else if (cleanUrl.endsWith('.xp3') || cleanUrl.includes('.xp3?')) {
+                    sourceType = 'xp3-url';
+                }
 
                 // 隐藏静态画廊大厅
                 const galleryMain = document.querySelector('.gallery-body');

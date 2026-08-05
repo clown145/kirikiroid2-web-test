@@ -143,6 +143,51 @@
             startupXp3Path: await L.resolveStartupXp3(reg.xp3Paths, hooks, src.entry)
         };
     };
+    // ?json=：JSON 清单模式加载散装文件
+    L.handlers['json-url'] = async function (src, hooks) {
+        report(hooks, 0, 'Fetching game manifest...');
+        await window.KrKr2VLFS.ready;
+
+        var res = await fetch(src.url);
+        if (!res.ok) throw new Error('Failed to fetch manifest: ' + res.status);
+        var manifest = await res.json();
+        
+        var xp3Paths = [];
+        var totalFiles = manifest.length;
+        
+        for (var i = 0; i < totalFiles; i++) {
+            var item = manifest[i];
+            if (!item.name || !item.url) continue;
+            
+            report(hooks, Math.round((i / totalFiles) * 100), 'Mounting ' + item.name + '...');
+            
+            // 规范化路径名，必须以 '/' 开头
+            var path = item.name.startsWith('/') ? item.name : ('/' + item.name);
+            
+            // 如果 JSON 中没提供 size，则探测获取
+            var size = item.size;
+            if (typeof size !== 'number' || size <= 0) {
+                var probe = await probeRemoteRange(item.url);
+                size = probe.size;
+            }
+            
+            if (size > 0) {
+                VLFS.registerRemote(path, item.url, size, true);
+                if (path.toLowerCase().endsWith('.xp3')) {
+                    xp3Paths.push(path);
+                }
+            } else {
+                console.warn('[vlfs] Skip mounting ' + item.name + ': could not determine size');
+            }
+        }
+        
+        console.log('[vlfs] json manifest registered: ' + totalFiles + ' entries, ' + xp3Paths.length + ' xp3');
+        report(hooks, 100, 'Starting game...');
+        
+        return {
+            startupXp3Path: await L.resolveStartupXp3(xp3Paths, hooks, src.entry)
+        };
+    };
 
     L.fetchBlobWithProgress = fetchBlobWithProgress;
 })();
