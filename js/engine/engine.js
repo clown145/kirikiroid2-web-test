@@ -125,10 +125,10 @@
         cb('onStatus')('Starting game...', 100);
 
         function releaseDep() {
-            if (userFileDepAdded) Module.removeRunDependency('user-file');
+            if (userFileDepAdded) window.Module.removeRunDependency('user-file');
         }
 
-        if (Module._saveSpaceId) {
+        if (window.Module && window.Module._saveSpaceId) {
             cb('onStatus')('Restoring saves...', 100);
             window.KrKr2IDB.restoreSaves().then(function () {
                 window.KrKr2FS.applyRendererPreference(bootOpts.renderer);
