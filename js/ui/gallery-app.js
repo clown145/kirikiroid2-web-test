@@ -77,9 +77,7 @@
             // 启动选定的游戏
             const playGame = (game) => {
                 if (!game.downloadUrl || !game.downloadUrl.trim()) {
-                    alert('请先在管理后台为 [' + game.title + '] 配置有效的游戏资源 URL (downloadUrl)');
-                    openAdmin();
-                    openEdit(game);
+                    alert('【' + game.title + '】暂未设置资源 URL，请点击右上角 [⚙️ 管理后台] 填入游戏直链。');
                     return;
                 }
 
@@ -146,6 +144,13 @@
             const closeAdmin = () => {
                 showAdmin.value = false;
                 resetForm();
+            };
+
+            // 全局 Esc 按键关闭管理面板
+            const handleKeydown = (e) => {
+                if (e.key === 'Escape' && showAdmin.value) {
+                    closeAdmin();
+                }
             };
 
             const resetForm = () => {
@@ -283,6 +288,7 @@
 
             onMounted(() => {
                 loadGames();
+                window.addEventListener('keydown', handleKeydown);
             });
 
             return {
