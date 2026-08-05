@@ -3,7 +3,7 @@
  * BUILD_VERSION is replaced by CMake at configure time with a timestamp.
  * If not replaced (e.g. during development), falls back to a static string.
  * Changing this value triggers a new SW install and cache refresh. */
-var CACHE_VERSION = '20260806060300';
+var CACHE_VERSION = '20260806062600';
 if (CACHE_VERSION.charAt(0) === '@') CACHE_VERSION = 'dev-20260323';
 var CACHE_NAME = 'krkr2-v' + CACHE_VERSION;
 
@@ -49,17 +49,12 @@ var RUNTIME_CACHE_ORIGINS = [
 ];
 
 self.addEventListener('install', function (event) {
-    /* NOTE: deliberately NO self.skipWaiting() here.
-     * Auto-activating mid-session deletes the old cache while a running page
-     * still holds the old index.js in memory; the engine then fetches the NEW
-     * index.wasm on game start and crashes on the js/wasm version mismatch
-     * (e.g. "Cannot read properties of undefined (reading 'version')" in
-     * _emscripten_glTexImage2D). The page (pwa-sw.html) prompts the user and
-     * posts 'skipWaiting' for a consented, reload-coupled switchover. */
     event.waitUntil(
         caches.open(CACHE_NAME).then(function (cache) {
             console.log('[SW] Precaching ' + PRECACHE_ASSETS.length + ' assets (v' + CACHE_VERSION + ')');
             return cache.addAll(PRECACHE_ASSETS);
+        }).then(function () {
+            return self.skipWaiting();
         })
     );
 });
