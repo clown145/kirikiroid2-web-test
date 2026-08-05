@@ -3,7 +3,7 @@
  * BUILD_VERSION is replaced by CMake at configure time with a timestamp.
  * If not replaced (e.g. during development), falls back to a static string.
  * Changing this value triggers a new SW install and cache refresh. */
-var CACHE_VERSION = '20260805205334';
+var CACHE_VERSION = '20260806051000';
 if (CACHE_VERSION.charAt(0) === '@') CACHE_VERSION = 'dev-20260323';
 var CACHE_NAME = 'krkr2-v' + CACHE_VERSION;
 
@@ -22,6 +22,7 @@ var PRECACHE_ASSETS = [
     './pwa/icon-192.png',
     './pwa/icon-512.png',
     './build-config.js',
+    './games.json',
     './css/app.css',
     './js/config.js',
     './js/app.js',
@@ -38,6 +39,7 @@ var PRECACHE_ASSETS = [
     './js/ui/shell-ui.js',
     './js/ui/space-ui.js',
     './js/ui/gallery.js',
+    './js/ui/gallery-app.js',
     './js/ui/pwa.js'
 ];
 

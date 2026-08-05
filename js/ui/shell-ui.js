@@ -45,18 +45,20 @@
     //   openFilePicker —— 用户主动打开（选完存档空间、点标题栏按钮），
     //                     不动 krkr2-autoload。
     function showFilePicker() {
-        // Auto-load failed or finished without a game: re-enable the
-        // statically rendered landing page hidden by the early head script.
         document.documentElement.classList.remove('krkr2-autoload');
-        filePicker.classList.add('visible');
+        if (filePicker) filePicker.classList.remove('visible');
+        var galleryRoot = document.getElementById('gallery-root');
+        if (galleryRoot) galleryRoot.style.display = '';
     }
 
     function openFilePicker() {
-        filePicker.classList.add('visible');
+        if (filePicker) filePicker.classList.remove('visible');
+        var galleryRoot = document.getElementById('gallery-root');
+        if (galleryRoot) galleryRoot.style.display = '';
     }
 
     function hideFilePicker() {
-        filePicker.classList.remove('visible');
+        if (filePicker) filePicker.classList.remove('visible');
     }
 
     function setPickerProgress(pct, text) {
