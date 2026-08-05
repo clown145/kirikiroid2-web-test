@@ -222,42 +222,52 @@ function deleteGame(gameId) {
 }
 
 // Export and Import Config
-document.getElementById('btn-export-json').addEventListener('click', function() {
-    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(getGameLibrary(), null, 2));
-    var dlAnchor = document.createElement('a');
-    dlAnchor.setAttribute("href", dataStr);
-    dlAnchor.setAttribute("download", "krkr2-game-library.json");
-    document.body.appendChild(dlAnchor);
-    dlAnchor.click();
-    dlAnchor.remove();
-});
+var btnExportJson = document.getElementById('btn-export-json');
+if (btnExportJson) {
+    btnExportJson.addEventListener('click', function() {
+        var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(getGameLibrary(), null, 2));
+        var dlAnchor = document.createElement('a');
+        dlAnchor.setAttribute("href", dataStr);
+        dlAnchor.setAttribute("download", "krkr2-game-library.json");
+        document.body.appendChild(dlAnchor);
+        dlAnchor.click();
+        dlAnchor.remove();
+    });
+}
 
-document.getElementById('btn-import-json').addEventListener('click', function() {
-    document.getElementById('input-import-json').click();
-});
+var btnImportJson = document.getElementById('btn-import-json');
+if (btnImportJson) {
+    btnImportJson.addEventListener('click', function() {
+        var inputImportJson = document.getElementById('input-import-json');
+        if (inputImportJson) inputImportJson.click();
+    });
+}
 
-document.getElementById('input-import-json').addEventListener('change', function(e) {
-    var file = e.target.files[0];
-    if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function(evt) {
-        try {
-            var parsed = JSON.parse(evt.target.result);
-            if (Array.isArray(parsed)) {
-                saveGameLibrary(parsed);
-                renderGameGallery();
-                renderAdminTable();
-                alert('成功导入 ' + parsed.length + ' 个游戏配置');
-            } else {
-                alert('导入失败：文件格式不符合 JSON 数组要求');
+var inputImportJson = document.getElementById('input-import-json');
+if (inputImportJson) {
+    inputImportJson.addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                var imported = JSON.parse(evt.target.result);
+                if (Array.isArray(imported)) {
+                    saveGameLibrary(imported);
+                    renderGameGallery();
+                    renderAdminTable();
+                    alert('导入配置成功！');
+                } else {
+                    alert('JSON 格式不符合规范（必须为游戏列表数组）。');
+                }
+            } catch(err) {
+                alert('解析 JSON 失败: ' + err.message);
             }
-        } catch(err) {
-            alert('解析 JSON 失败：' + err.message);
-        }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-});
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+    });
+}
 
 // closeLocalPicker / openLocalPicker 已归属 js/ui/shell-ui.js（文件选择器
 // 是引擎外壳而非画廊的一部分），这里直接复用它挂在 window 上的实现。

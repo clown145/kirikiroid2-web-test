@@ -113,7 +113,7 @@
                         'Extracting (' + done + '/' + total + ') ' + path.substring(1));
                 }
             });
-            console.log('[vlfs] remote zip (Range): ' + src.url + ', ' + size + ' bytes');
+            console.log('[vlfs] remote zip (Range): ' + src.url + ', ' + probe.size + ' bytes');
         } else {
             report(hooks, 0, 'Downloading game archive...');
             var blob = await fetchBlobWithProgress(src.url, function (loaded, total) {

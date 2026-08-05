@@ -145,7 +145,7 @@
             <div v-if="filteredGames.length > 0" class="game-grid">
                 <div v-for="game in filteredGames" :key="game.id" class="game-card" @click="playGame(game)">
                     <div class="game-cover-wrap">
-                        <img :src="game.coverUrl || 'pwa/icon-512.png'" class="game-cover-img" :alt="game.title" loading="lazy" @error="(e) => e.target.src='pwa/icon-512.png'">
+                        <img :src="game.coverUrl || 'pwa/icon-512.png'" class="game-cover-img" :alt="game.title" loading="lazy" crossorigin="anonymous" @error="(e) => e.target.src='pwa/icon-512.png'">
                         <div class="game-overlay">
                             <div class="play-btn-circle">
                                 <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
