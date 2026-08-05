@@ -1,11 +1,3 @@
-Title: Live Content
-
-Description: Fetched live
-
-Source: https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js
-
----
-
 /**
 * vue v3.5.41
 * (c) 2018-present Yuxi (Evan) You and Vue contributors

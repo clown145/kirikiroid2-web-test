@@ -3,7 +3,7 @@
  * BUILD_VERSION is replaced by CMake at configure time with a timestamp.
  * If not replaced (e.g. during development), falls back to a static string.
  * Changing this value triggers a new SW install and cache refresh. */
-var CACHE_VERSION = '20260806063100';
+var CACHE_VERSION = '20260806070700';
 if (CACHE_VERSION.charAt(0) === '@') CACHE_VERSION = 'dev-20260323';
 var CACHE_NAME = 'krkr2-v' + CACHE_VERSION;
 
