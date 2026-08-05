@@ -75,7 +75,7 @@
             };
 
             // 启动选定的游戏
-            const playGame = (game) => {
+            const playGame = async (game) => {
                 if (!game.downloadUrl || !game.downloadUrl.trim()) {
                     alert('【' + game.title + '】暂未设置资源 URL，请点击右上角 [⚙️ 管理后台] 填入游戏直链。');
                     return;
@@ -83,6 +83,15 @@
 
                 activeGameTitle.value = game.title;
                 isGameActive.value = true;
+
+                // 优先根据游戏标题设置独立的存档空间
+                const spaceName = 'save_' + (game.title || game.id || 'default');
+                try {
+                    await window.KrKr2Engine.setSaveSpace(spaceName, { remember: true, register: true });
+                    if (window.KrKr2SpaceUI) window.KrKr2SpaceUI.markSpaceChosen();
+                } catch (e) {
+                    console.warn('Failed to set save space:', e);
+                }
 
                 // 根据文件后缀动态识别类型 (.json -> json-url, .xp3 -> xp3-url, .zip -> zip-url)
                 const cleanUrl = game.downloadUrl.trim().toLowerCase();
