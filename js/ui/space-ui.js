@@ -94,12 +94,10 @@
 
     async function autoSelectSpace() {
         if (hasFileSystemAPI) return;
-        var lastSpace = localStorage.getItem('krkr2-last-space');
-        if (lastSpace) {
-            // 复刻原 autoSelectSpace：只置位并打开，不改写 last-space、不登记
-            await window.KrKr2Engine.setSaveSpace(lastSpace,
-                { remember: false, register: false });
-        }
+        var lastSpace = localStorage.getItem('krkr2-last-space') || 'default';
+        await window.KrKr2Engine.setSaveSpace(lastSpace,
+            { remember: true, register: true });
+        spaceChosen = true;
     }
 
     function markSpaceChosen() { spaceChosen = true; }

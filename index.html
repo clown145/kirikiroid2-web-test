@@ -97,7 +97,7 @@
         <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
     </div>
 
-    <div id="save-space-picker" data-nosnippet>
+    <div id="save-space-picker" data-nosnippet style="display:none !important;">
         <div id="space-box">
             <h1>Save Spaces</h1>
             <p class="subtitle">Select or create a save space to persist your game data</p>
@@ -365,8 +365,8 @@
     <input type="file" id="zip-input" accept=".zip,application/zip,application/x-zip-compressed" style="display:none;">
     <input type="file" id="space-import-input" accept=".zip" style="display:none;">
 
-    <script src="js/vue.global.prod.js"></script>
-    <script src="js/jszip.min.js"></script>
+    <script src="js/vendor/vue.global.prod.js"></script>
+    <script src="js/vendor/jszip.min.js"></script>
     <script src="vlfs.js?v=opfs-zip-cache-v2"></script>
 
     <!-- 构建注入的配置。源码树直接开页面时该文件不存在，classic script 的 404

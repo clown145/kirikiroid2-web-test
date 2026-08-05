@@ -62,17 +62,17 @@
     }
 
     function setPickerProgress(pct, text) {
-        pickerProgress.classList.add('visible');
-        pickerProgressFill.style.width = pct + '%';
-        if (text) pickerStatus.textContent = text;
+        if (pickerProgress) pickerProgress.classList.add('visible');
+        if (pickerProgressFill) pickerProgressFill.style.width = pct + '%';
+        if (text && pickerStatus) pickerStatus.textContent = text;
     }
 
     function hidePickerProgress() {
-        pickerProgress.classList.remove('visible');
+        if (pickerProgress) pickerProgress.classList.remove('visible');
     }
 
     function setPickerStatus(text) {
-        pickerStatus.textContent = text;
+        if (pickerStatus) pickerStatus.textContent = text;
     }
 
     // --- 多 xp3 选择 ----------------------------------------------------
