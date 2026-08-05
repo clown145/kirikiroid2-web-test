@@ -76,25 +76,34 @@
 
             // 启动选定的游戏
             const playGame = (game) => {
-                if (!game.downloadUrl) {
+                if (!game.downloadUrl || !game.downloadUrl.trim()) {
                     alert('请先在管理后台为 [' + game.title + '] 配置有效的游戏资源 URL (downloadUrl)');
                     openAdmin();
                     openEdit(game);
                     return;
                 }
+
                 activeGameTitle.value = game.title;
                 isGameActive.value = true;
-                
-                // 隐藏画廊大厅
-                document.getElementById('gallery-root').style.display = 'none';
+
+                // 根据文件后缀动态识别类型 (.xp3 -> xp3-url, .zip -> zip-url)
+                const cleanUrl = game.downloadUrl.trim().toLowerCase();
+                const sourceType = (cleanUrl.endsWith('.xp3') || cleanUrl.includes('.xp3?')) ? 'xp3-url' : 'zip-url';
+
+                // 隐藏静态画廊大厅
+                const galleryMain = document.querySelector('.gallery-body');
+                const galleryNav = document.querySelector('.nav-bar');
+                if (galleryMain) galleryMain.style.display = 'none';
+                if (galleryNav) galleryNav.style.display = 'none';
 
                 // 调用 KrKr2App 启动远端资源
                 window.KrKr2App.startRemote({
-                    type: 'zip-url',
-                    url: game.downloadUrl,
-                    entry: game.entryXp3 || undefined
+                    type: sourceType,
+                    url: game.downloadUrl.trim(),
+                    entry: game.entryXp3 ? game.entryXp3.trim() : undefined
                 }).catch(err => {
-                    console.error('Failed to launch game:', err);
+                    console.error('[gallery] Failed to launch game:', err);
+                    alert('加载游戏失败: ' + (err.message || err));
                     exitToGallery();
                 });
             };
@@ -108,7 +117,10 @@
             // 退出游戏返回大厅
             const exitToGallery = () => {
                 isGameActive.value = false;
-                document.getElementById('gallery-root').style.display = '';
+                const galleryMain = document.querySelector('.gallery-body');
+                const galleryNav = document.querySelector('.nav-bar');
+                if (galleryMain) galleryMain.style.display = '';
+                if (galleryNav) galleryNav.style.display = '';
             };
 
             // 管理后台 CRUD
