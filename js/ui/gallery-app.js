@@ -223,6 +223,37 @@
                 event.target.value = '';
             };
 
+            // 清理本地已下载的缓存与只读文件系统 (Cache Storage + OPFS + SW)
+            const clearAllCaches = async () => {
+                if (confirm('确定要清除本地已下载的游戏缓存、SW 缓存和临时文件吗？\n（这不会清空您的画廊配置，清理后页面将自动刷新）')) {
+                    try {
+                        // 1. 清理 Cache Storage
+                        if ('caches' in window) {
+                            const keys = await caches.keys();
+                            await Promise.all(keys.map(k => caches.delete(k)));
+                        }
+                        // 2. 清理 OPFS 私有文件系统
+                        if (navigator.storage && navigator.storage.getDirectory) {
+                            try {
+                                const root = await navigator.storage.getDirectory();
+                                for await (const name of root.keys()) {
+                                    await root.removeEntry(name, { recursive: true });
+                                }
+                            } catch (e) {}
+                        }
+                        // 3. 注销 Service Worker 强制重新激活
+                        if ('serviceWorker' in navigator) {
+                            const regs = await navigator.serviceWorker.getRegistrations();
+                            for (let reg of regs) { await reg.unregister(); }
+                        }
+                        alert('已完成本地所有资源与缓存数据的清理！');
+                        window.location.reload();
+                    } catch (err) {
+                        alert('清理过程遇到错误: ' + err.message);
+                    }
+                }
+            };
+
             onMounted(() => {
                 loadGames();
             });
@@ -245,7 +276,8 @@
                 saveGame,
                 removeGame,
                 exportConfig,
-                importConfig
+                importConfig,
+                clearAllCaches
             };
         }
     });

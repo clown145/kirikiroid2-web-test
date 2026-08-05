@@ -180,11 +180,12 @@
                 <div class="admin-body">
                     <!-- Config Import/Export Toolbar -->
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; background: rgba(30,41,59,0.5); padding:12px 16px; border-radius:10px;">
-                        <span style="font-size:13px; color:#94a3b8;">配置变更将自动保存至浏览器 Storage。支持导出导出 JSON 文件包。</span>
-                        <div style="display:flex; gap:10px;">
-                            <button class="btn-glass" @click="exportConfig" style="font-size:12px; padding:6px 12px;">📥 导出配置 JSON</button>
-                            <label class="btn-glass" style="font-size:12px; padding:6px 12px; cursor:pointer;">
-                                📤 导入配置 JSON
+                        <span style="font-size:13px; color:#94a3b8;">配置自动保存至 LocalStorage。已下载资源的缓存可一键清空。</span>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn-glass" @click="clearAllCaches" style="font-size:12px; padding:6px 10px; color:#f59e0b; border-color:rgba(245,158,11,0.3);">🧹 清理已下载缓存</button>
+                            <button class="btn-glass" @click="exportConfig" style="font-size:12px; padding:6px 10px;">📥 导出 JSON</button>
+                            <label class="btn-glass" style="font-size:12px; padding:6px 10px; cursor:pointer;">
+                                📤 导入 JSON
                                 <input type="file" accept=".json" @change="importConfig" style="display:none;">
                             </label>
                         </div>
