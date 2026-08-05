@@ -1,11 +1,13 @@
 [
   {
-    "id": "sample-fate",
-    "title": "示例：星之伊斯特拉 (Demo)",
-    "coverUrl": "pwa/demo_cover.jpg",
-    "downloadUrl": "",
+    "id": "game_1785964429625",
+    "title": "纸上的魔法使",
+    "coverUrl": "https://tc.ciallo.ccwu.cc/file/1785040291388_IMG_20260726_123032.jpg",
+    "downloadUrl": "https://r2.kisaki.love/manifest.json",
     "entryXp3": "data.xp3",
-    "description": "欢迎体验全新 UI 游戏大厅！请在右上角【⚙️ 管理后台】为此游戏配置资源下载 URL (.zip)，或在左上角直接导入本地 XP3/文件夹。",
-    "tags": ["视觉小说", "ADV", "Demo"]
+    "description": "这是一个被小清新的青春与苦闷焦躁的感情动摇的，某个小而又小图书馆的物语…… 去将遊行寺夜子的逞强。 去将月社妃的可爱。 去将伏見理央的坚强。 去将日向かなた的耀眼感。  准备好——来一场你与书的恋爱吧。",
+    "tags": [
+      "恋爱"
+    ]
   }
 ]
