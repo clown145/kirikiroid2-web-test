@@ -281,7 +281,7 @@
         </div>
 
         <!-- Floating Controls during Game Session -->
-        <div id="game-controls-bar" v-if="isGameActive">
+        <div id="game-controls-bar" v-if="isGameActive" style="pointer-events: auto;">
             <span style="font-size:13px; font-weight:600; color:#e2e8f0; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                 🎮 {{ activeGameTitle }}
             </span>

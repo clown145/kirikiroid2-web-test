@@ -95,11 +95,16 @@
                     sourceType = 'xp3-url';
                 }
 
-                // 隐藏静态画廊大厅
+                // 隐藏静态画廊大厅并使根节点透明穿透，以显示底层的 Canvas 游戏画面
+                const galleryRoot = document.getElementById('gallery-root');
                 const galleryMain = document.querySelector('.gallery-body');
                 const galleryNav = document.querySelector('.nav-bar');
                 if (galleryMain) galleryMain.style.display = 'none';
                 if (galleryNav) galleryNav.style.display = 'none';
+                if (galleryRoot) {
+                    galleryRoot.style.background = 'transparent';
+                    galleryRoot.style.pointerEvents = 'none';
+                }
 
                 // 调用 KrKr2App 启动远端资源
                 window.KrKr2App.startRemote({
@@ -122,10 +127,15 @@
             // 退出游戏返回大厅
             const exitToGallery = () => {
                 isGameActive.value = false;
+                const galleryRoot = document.getElementById('gallery-root');
                 const galleryMain = document.querySelector('.gallery-body');
                 const galleryNav = document.querySelector('.nav-bar');
                 if (galleryMain) galleryMain.style.display = '';
                 if (galleryNav) galleryNav.style.display = '';
+                if (galleryRoot) {
+                    galleryRoot.style.background = '';
+                    galleryRoot.style.pointerEvents = '';
+                }
             };
 
             // 管理后台 CRUD
