@@ -219,7 +219,7 @@
          */
         setSaveSpace: function (id, opts) {
             opts = opts || {};
-            Module._saveSpaceId = id;
+            if (window.Module) window.Module._saveSpaceId = id;
             if (!id) return Promise.resolve();
             if (opts.remember !== false) localStorage.setItem('krkr2-last-space', id);
             return window.KrKr2IDB.open(id).then(function () {

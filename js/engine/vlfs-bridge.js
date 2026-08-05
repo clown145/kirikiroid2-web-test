@@ -24,12 +24,9 @@
         if (data.length <= 8 * 1024 * 1024 && typeof FS !== 'undefined') {
             try { window.KrKr2FS.writeFileToFS(path, data); } catch (e) {}
         }
-        // 游戏可能把存档写在游戏目录内的 savedata/ 下（如千恋万花
-        // mainwindow.tjs checkSave），一并纳入 IDB 持久化
-        var isSavePath = path.startsWith('/savedata/') || path.startsWith('/save/') ||
-            path.indexOf('/savedata/') >= 0;
-        if (!Module._hostDirHandle) {
-            if (Module._saveSpaceId && isSavePath) window.KrKr2IDB.saveFile(path, data);
+        // 游戏可能把存档写在游戏目录内的任意位置，一并纳入 IDB 持久化
+        if (!window.Module._hostDirHandle) {
+            if (window.Module._saveSpaceId) window.KrKr2IDB.saveFile(path, data);
             return;
         }
         var dirHandle = Module._hostDirHandle;
