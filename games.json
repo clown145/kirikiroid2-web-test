@@ -1,11 +1,11 @@
 [
   {
     "id": "sample-fate",
-    "title": "示例：冥契的牧神节",
-    "coverUrl": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80",
+    "title": "示例：星之伊斯特拉 (Demo)",
+    "coverUrl": "pwa/demo_cover.jpg",
     "downloadUrl": "",
     "entryXp3": "data.xp3",
-    "description": "欢迎体验 Kirikiroid2 Web 模拟器！点击卡片可以从远程 URL 加载 ZIP 游戏压缩包，或者在上方手动上传本地游戏文件。",
+    "description": "欢迎体验全新 UI 游戏大厅！请在右上角【⚙️ 管理后台】为此游戏配置资源下载 URL (.zip)，或在左上角直接导入本地 XP3/文件夹。",
     "tags": ["视觉小说", "ADV", "Demo"]
   }
 ]
