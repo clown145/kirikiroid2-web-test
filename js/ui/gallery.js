@@ -44,6 +44,7 @@ function saveGameLibrary(list) {
 
 function renderGameGallery() {
     var grid = document.getElementById('game-grid');
+    if (!grid) return;
     var list = getGameLibrary();
     grid.innerHTML = '';
 
@@ -125,6 +126,7 @@ function closeAdminModal() {
 
 function renderAdminTable() {
     var tbody = document.getElementById('admin-game-tbody');
+    if (!tbody) return;
     var list = getGameLibrary();
     tbody.innerHTML = '';
 
