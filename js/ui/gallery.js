@@ -273,15 +273,24 @@ if (inputImportJson) {
 // 是引擎外壳而非画廊的一部分），这里直接复用它挂在 window 上的实现。
 
 // Header Buttons
-document.getElementById('btn-add-game').addEventListener('click', function() {
-    openGameEditModal();
-});
-document.getElementById('btn-open-admin').addEventListener('click', function() {
-    openAdminModal();
-});
-document.getElementById('btn-open-local').addEventListener('click', function() {
-    window.openLocalPicker();
-});
+var btnAddGame = document.getElementById('btn-add-game');
+if (btnAddGame) {
+    btnAddGame.addEventListener('click', function() {
+        openGameEditModal();
+    });
+}
+var btnOpenAdmin = document.getElementById('btn-open-admin');
+if (btnOpenAdmin) {
+    btnOpenAdmin.addEventListener('click', function() {
+        openAdminModal();
+    });
+}
+var btnOpenLocal = document.getElementById('btn-open-local');
+if (btnOpenLocal) {
+    btnOpenLocal.addEventListener('click', function() {
+        window.openLocalPicker();
+    });
+}
 
 // Initial rendering on DOM Ready
 document.addEventListener('DOMContentLoaded', function() {
