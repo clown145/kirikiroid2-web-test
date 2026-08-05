@@ -1,0 +1,11 @@
+[
+  {
+    "id": "sample-fate",
+    "title": "示例：冥契的牧神节",
+    "coverUrl": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80",
+    "downloadUrl": "",
+    "entryXp3": "data.xp3",
+    "description": "欢迎体验 Kirikiroid2 Web 模拟器！点击卡片可以从远程 URL 加载 ZIP 游戏压缩包，或者在上方手动上传本地游戏文件。",
+    "tags": ["视觉小说", "ADV", "Demo"]
+  }
+]

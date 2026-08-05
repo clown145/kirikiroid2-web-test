@@ -113,110 +113,184 @@
             <div id="space-status"></div>
         </div>
     </div>
-    <!-- Top Gallery Header -->
-    <div id="gallery-header" data-nosnippet>
-        <div class="header-title">
-            <h1>Kirikiroid2 Web</h1>
-        </div>
-        <div class="header-actions">
-            <button id="btn-add-game" class="btn-action primary">+ 新增游戏</button>
-            <button id="btn-open-admin" class="btn-action">⚙️ 管理后台</button>
-            <button id="btn-open-local" class="btn-action">📂 打开本地文件</button>
-        </div>
-    </div>
-
-    <!-- Main Game Gallery Container -->
-    <div id="game-gallery-view" data-nosnippet>
-        <div id="game-grid" class="game-grid">
-            <!-- Dynamic game cards rendered here -->
-        </div>
-    </div>
-
-    <!-- Admin Management Modal -->
-    <div id="admin-modal" class="modal-overlay" data-nosnippet>
-        <div class="modal-container">
-            <div class="modal-header">
-                <h2>游戏配置管理后台</h2>
-                <button class="modal-close-btn" onclick="closeAdminModal()">&times;</button>
+    <!-- Modern Vue 3 Game Gallery & Admin Overhaul -->
+    <div id="gallery-root" data-nosnippet>
+        <!-- Top Navigation Bar -->
+        <header class="nav-bar">
+            <div class="nav-brand">
+                <svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm3-3c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+                <span>Kirikiroid2 Gallery</span>
             </div>
-            <div class="modal-body">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                    <p style="color:#aaa; font-size:13px;">配置和管理游戏库。所有的更改会自动保存在浏览器本地。</p>
-                    <div style="display:flex; gap:8px;">
-                        <button id="btn-export-json" class="btn-action" style="font-size:12px; padding:6px 12px;">导出配置 (JSON)</button>
-                        <button id="btn-import-json" class="btn-action" style="font-size:12px; padding:6px 12px;">导入配置</button>
-                        <input type="file" id="input-import-json" accept=".json" style="display:none;">
+            <div class="nav-actions">
+                <button class="btn-glass" @click="openLocalUpload">
+                    <span>📂 打开本地文件</span>
+                </button>
+                <button class="btn-glass btn-primary-glass" @click="openAdmin">
+                    <span>⚙️ 管理后台</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Gallery Body -->
+        <main class="gallery-body">
+            <div class="gallery-header">
+                <h1 class="gallery-title">游戏库 ({{ filteredGames.length }})</h1>
+                <div class="gallery-search">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <input type="text" v-model="searchQuery" placeholder="搜索游戏标题...">
+                </div>
+            </div>
+
+            <!-- Game Cards Grid -->
+            <div v-if="filteredGames.length > 0" class="game-grid">
+                <div v-for="game in filteredGames" :key="game.id" class="game-card" @click="playGame(game)">
+                    <div class="game-cover-wrap">
+                        <img :src="game.coverUrl || 'pwa/icon-512.png'" class="game-cover-img" :alt="game.title" loading="lazy" @error="(e) => e.target.src='pwa/icon-512.png'">
+                        <div class="game-overlay">
+                            <div class="play-btn-circle">
+                                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="game-info">
+                        <div class="game-title">{{ game.title }}</div>
+                        <div class="game-desc">{{ game.description || '暂无描述' }}</div>
+                        <div class="game-tags" v-if="game.tags && game.tags.length">
+                            <span v-for="tag in game.tags" :key="tag" class="game-tag">{{ tag }}</span>
+                        </div>
                     </div>
                 </div>
-                <div style="overflow-x:auto;">
+            </div>
+
+            <!-- Empty State -->
+            <div v-else class="empty-gallery">
+                <h3>暂无匹配的游戏</h3>
+                <p>未在仓库中找到任何符合条件的游戏描述。点击管理后台或打开本地文件进行配置。</p>
+                <button class="btn-glass btn-primary-glass" @click="openAdmin">添加首个游戏</button>
+            </div>
+        </main>
+
+        <!-- Admin Drawer / Modal -->
+        <div v-if="showAdmin" class="admin-drawer-overlay" @click.self="closeAdmin">
+            <div class="admin-drawer">
+                <div class="admin-header">
+                    <h2>⚙️ 模拟器游戏画廊管理后台</h2>
+                    <button class="modal-close-btn" @click="closeAdmin">&times;</button>
+                </div>
+                <div class="admin-body">
+                    <!-- Config Import/Export Toolbar -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; background: rgba(30,41,59,0.5); padding:12px 16px; border-radius:10px;">
+                        <span style="font-size:13px; color:#94a3b8;">配置变更将自动保存至浏览器 Storage。支持导出导出 JSON 文件包。</span>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn-glass" @click="exportConfig" style="font-size:12px; padding:6px 12px;">📥 导出配置 JSON</button>
+                            <label class="btn-glass" style="font-size:12px; padding:6px 12px; cursor:pointer;">
+                                📤 导入配置 JSON
+                                <input type="file" accept=".json" @change="importConfig" style="display:none;">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Add / Edit Form -->
+                    <div style="background: rgba(15,23,42,0.6); padding:20px; border-radius:12px; border:1px solid rgba(255,255,255,0.08); margin-bottom:24px;">
+                        <h3 style="font-size:15px; margin-bottom:16px; color:#c084fc;">
+                            {{ isEditing ? '✏️ 编辑游戏配置' : '➕ 新增游戏数据' }}
+                        </h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>游戏名称 (*)</label>
+                                <input type="text" v-model="editForm.title" placeholder="例如：冥契的牧神节">
+                            </div>
+                            <div class="form-group">
+                                <label>封面图片 URL</label>
+                                <input type="text" v-model="editForm.coverUrl" placeholder="https://example.com/cover.jpg">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>资源下载 URL (.zip 或 .xp3)</label>
+                                <input type="text" v-model="editForm.downloadUrl" placeholder="https://example.com/game.zip">
+                                <div class="form-hint">支持可公开访问的完整路径游戏压缩包直链</div>
+                            </div>
+                            <div class="form-group">
+                                <label>启动 XP3 文件名 (可选)</label>
+                                <input type="text" v-model="editForm.entryXp3" placeholder="例如：data.xp3 (默认为空自动识别)">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>分类标签 (用逗号分隔)</label>
+                            <input type="text" v-model="editForm.tags" placeholder="ADV, 汉化版, 恋爱">
+                        </div>
+                        <div class="form-group">
+                            <label>游戏简介说明</label>
+                            <input type="text" v-model="editForm.description" placeholder="关于该游戏的简要介绍...">
+                        </div>
+                        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+                            <button v-if="isEditing" class="btn-glass" @click="resetForm">取消编辑</button>
+                            <button class="btn-glass btn-primary-glass" @click="saveGame">
+                                {{ isEditing ? '保存修改' : '确认添加' }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Games List Table -->
+                    <h3 style="font-size:15px; margin-bottom:12px; color:#f8fafc;">现有游戏列表 ({{ games.length }})</h3>
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>封面</th>
-                                <th>游戏名称</th>
-                                <th>资源类型</th>
-                                <th>存档空间 ID</th>
-                                <th>操作</th>
+                                <th style="width:60px;">封面</th>
+                                <th>标题</th>
+                                <th>资源 URL</th>
+                                <th>标签</th>
+                                <th style="width:120px; text-align:right;">操作</th>
                             </tr>
                         </thead>
-                        <tbody id="admin-game-tbody">
-                            <!-- Dynamic admin rows -->
+                        <tbody>
+                            <tr v-for="g in games" :key="g.id">
+                                <td>
+                                    <img :src="g.coverUrl || 'pwa/icon-192.png'" class="admin-table-cover" @error="(e) => e.target.src='pwa/icon-192.png'">
+                                </td>
+                                <td>
+                                    <div style="font-weight:600; color:#fff;">{{ g.title }}</div>
+                                    <div style="font-size:11px; color:#64748b;" v-if="g.entryXp3">入口: {{ g.entryXp3 }}</div>
+                                </td>
+                                <td>
+                                    <div style="font-size:12px; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#94a3b8;">
+                                        {{ g.downloadUrl || '(未设置 - 需选本地文件)' }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span v-for="t in g.tags" :key="t" class="game-tag" style="margin-right:4px;">{{ t }}</span>
+                                </td>
+                                <td style="text-align:right;">
+                                    <button class="btn-glass" style="font-size:11px; padding:4px 8px; margin-right:4px;" @click="openEdit(g)">编辑</button>
+                                    <button class="btn-glass" style="font-size:11px; padding:4px 8px; color:#ef4444; border-color:rgba(239,68,68,0.3);" @click="removeGame(g.id)">删除</button>
+                                </td>
+                            </tr>
+                            <tr v-if="games.length === 0">
+                                <td colspan="5" style="text-align:center; color:#64748b; padding:24px;">暂无配置游戏数据，请在上方表单中新增。</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
+                <div class="admin-footer">
+                    <span class="badge-count">共 {{ games.length }} 个数据节点</span>
+                    <button class="btn-glass" @click="closeAdmin">关闭面板</button>
+                </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn-action primary" onclick="openGameEditModal()">+ 添加新游戏</button>
-                <button class="btn-action" onclick="closeAdminModal()">关闭</button>
-            </div>
+        </div>
+
+        <!-- Floating Controls during Game Session -->
+        <div id="game-controls-bar" v-if="isGameActive">
+            <span style="font-size:13px; font-weight:600; color:#e2e8f0; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                🎮 {{ activeGameTitle }}
+            </span>
+            <button class="btn-glass" style="font-size:12px; padding:4px 10px;" @click="exitToGallery">
+                🚪 退出游戏回大厅
+            </button>
         </div>
     </div>
 
-    <!-- Add / Edit Game Modal -->
-    <div id="game-edit-modal" class="modal-overlay" data-nosnippet>
-        <div class="modal-container" style="max-width:540px;">
-            <div class="modal-header">
-                <h2 id="edit-modal-title">添加新游戏</h2>
-                <button class="modal-close-btn" onclick="closeGameEditModal()">&times;</button>
-            </div>
-            <form id="game-form" onsubmit="saveGameForm(event)">
-                <div class="modal-body">
-                    <input type="hidden" id="form-game-id">
-                    <div class="form-group">
-                        <label for="form-game-name">游戏名称 *</label>
-                        <input type="text" id="form-game-name" required placeholder="如：Fate/stay night">
-                    </div>
-                    <div class="form-group">
-                        <label for="form-game-cover">封面图片 URL</label>
-                        <input type="url" id="form-game-cover" placeholder="https://example.com/cover.jpg">
-                        <div class="form-hint">支持 JPG/PNG/WebP 图像直链，留空显示默认标志。</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="form-game-url">资源文件链接 (Remote URL) *</label>
-                        <input type="url" id="form-game-url" required placeholder="https://example.com/game.zip 或 .xp3">
-                        <div class="form-hint">可填写远端 .zip 压缩包或单文件 .xp3 的 HTTP/HTTPS 直链（必须支持跨域/CORS）。</div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="form-game-entry">主入口 XP3 (可选)</label>
-                            <input type="text" id="form-game-entry" placeholder="如：data.xp3">
-                            <div class="form-hint">包含多个 XP3 时指定启动目标。</div>
-                        </div>
-                        <div class="form-group">
-                            <label for="form-game-space">存档空间 ID (Space ID)</label>
-                            <input type="text" id="form-game-space" placeholder="自动生成独立 ID">
-                            <div class="form-hint">用于隔离不同游戏的 IndexedDB 存档。</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn-action primary">保存设置</button>
-                    <button type="button" class="btn-action" onclick="closeGameEditModal()">取消</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
+    <!-- 隐藏原生的废弃画廊静态弹出窗口, 由 Vue 3 接管 -->
     <div id="file-picker" class="modal-overlay">
         <div class="modal-container" style="max-width:680px;">
             <div class="modal-header">
@@ -288,18 +362,14 @@
     <input type="file" id="file-input" style="display:none;">
     <input type="file" id="dir-input" webkitdirectory style="display:none;">
     <input type="file" id="zip-input" accept=".zip,application/zip,application/x-zip-compressed" style="display:none;">
-    <!-- 存档空间导入。6666aee（画廊功能）误删了本元素但留下了两处 JS 引用，
-         其中 space-ui 的 change 绑定是顶层代码，null.addEventListener 会抛
-         TypeError 并中断整个脚本块 —— 恢复自 929fb95。 -->
     <input type="file" id="space-import-input" accept=".zip" style="display:none;">
 
-    <!-- JSZip 仅用于存档空间导入/导出；游戏加载已改为 VLFS 懒加载（vlfs.js） -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" crossorigin="anonymous"></script>
     <script src="vlfs.js?v=opfs-zip-cache-v2"></script>
 
     <!-- 构建注入的配置。源码树直接开页面时该文件不存在，classic script 的 404
-         只报错不中断解析，随后的 js/config.js 负责填开发默认值（与 sw.js 里
-         `if (CACHE_VERSION.charAt(0) === '@')` 相同的自兜底思路）。 -->
+         只报错不中断解析，随后的 js/config.js 负责填开发默认值。 -->
     <script src="build-config.js"></script>
     <script src="js/config.js"></script>
 
@@ -323,5 +393,6 @@
     <script src="js/ui/gallery.js"></script>
     <script src="js/ui/pwa.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/ui/gallery-app.js"></script>
 </body>
 </html>
