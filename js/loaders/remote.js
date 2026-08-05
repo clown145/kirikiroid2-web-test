@@ -35,23 +35,47 @@
         return new Blob(segments);
     }
 
+    // 探测远程服务器对 Range 请求的支持。优先 HEAD 查标头；若无标头则用
+    // 1-byte Range (0-0) 探测，防止因跨域 CORS 未 Exposed 标头而误降级为全量下载。
+    async function probeRemoteRange(url) {
+        var ranges = false, size = -1, fingerprint = '';
+        try {
+            var head = await fetch(url, { method: 'HEAD' });
+            if (head.ok) {
+                ranges = (head.headers.get('Accept-Ranges') || '').toLowerCase() === 'bytes';
+                size = parseInt(head.headers.get('Content-Length') || '-1', 10);
+                var contentSha256 = (head.headers.get('X-Content-SHA256') || '').trim().toLowerCase();
+                if (/^[0-9a-f]{64}$/.test(contentSha256)) fingerprint = 'sha256-' + contentSha256;
+            }
+        } catch (e) {}
+
+        if (!ranges || size <= 0) {
+            try {
+                var test = await fetch(url, { headers: { 'Range': 'bytes=0-0' } });
+                if (test.status === 206) {
+                    ranges = true;
+                    var cr = test.headers.get('Content-Range'); // e.g. "bytes 0-0/123456"
+                    if (cr) {
+                        var match = cr.match(/\/(\d+)$/);
+                        if (match) size = parseInt(match[1], 10);
+                    }
+                }
+            } catch (e) {}
+        }
+
+        return { ranges: ranges, size: size, fingerprint: fingerprint };
+    }
+
     // ?xp3=：优先 HTTP Range 懒加载；服务器不支持时整包 Blob（仍 off-heap）
     L.handlers['xp3-url'] = async function (src, hooks) {
         report(hooks, 0, 'Probing game data...');
         await window.KrKr2VLFS.ready;
 
-        var ranges = false, size = -1;
-        try {
-            var head = await fetch(src.url, { method: 'HEAD' });
-            if (head.ok) {
-                ranges = (head.headers.get('Accept-Ranges') || '').toLowerCase() === 'bytes';
-                size = parseInt(head.headers.get('Content-Length') || '-1', 10);
-            }
-        } catch (e) {}
+        var probe = await probeRemoteRange(src.url);
 
-        if (ranges && size > 0) {
-            VLFS.registerRemote('/data.xp3', src.url, size, true);
-            console.log('[vlfs] remote xp3 (Range): ' + src.url + ', ' + size + ' bytes');
+        if (probe.ranges && probe.size > 0) {
+            VLFS.registerRemote('/data.xp3', src.url, probe.size, true);
+            console.log('[vlfs] remote xp3 (Range lazy-load): ' + src.url + ', ' + probe.size + ' bytes');
         } else {
             report(hooks, 0, 'Downloading game data...');
             var blob = await fetchBlobWithProgress(src.url, function (loaded, total) {
@@ -63,7 +87,7 @@
                 }
             });
             VLFS.registerBlobFile('/data.xp3', blob);
-            console.log('[vlfs] remote xp3 (whole blob): ' + blob.size + ' bytes');
+            console.log('[vlfs] remote xp3 (whole blob fallback): ' + blob.size + ' bytes');
         }
 
         // 单文件挂在固定路径，引擎自己找得到，不需要 startupXp3Path
@@ -77,26 +101,13 @@
         report(hooks, 0, 'Probing game archive...');
         await window.KrKr2VLFS.ready;
 
-        var ranges = false, size = -1, archiveFingerprint = '';
-        try {
-            var head = await fetch(src.url, { method: 'HEAD' });
-            if (head.ok) {
-                ranges = (head.headers.get('Accept-Ranges') || '')
-                    .toLowerCase() === 'bytes';
-                size = parseInt(head.headers.get('Content-Length') || '-1', 10);
-                var contentSha256 =
-                    (head.headers.get('X-Content-SHA256') || '')
-                        .trim().toLowerCase();
-                if (/^[0-9a-f]{64}$/.test(contentSha256))
-                    archiveFingerprint = 'sha256-' + contentSha256;
-            }
-        } catch (e) {}
+        var probe = await probeRemoteRange(src.url);
 
         var reg;
-        if (ranges && size > 0) {
+        if (probe.ranges && probe.size > 0) {
             report(hooks, 0, 'Reading archive index...');
-            reg = await VLFS.registerZipRemote(src.url, size, {
-                fingerprint: archiveFingerprint || undefined,
+            reg = await VLFS.registerZipRemote(src.url, probe.size, {
+                fingerprint: probe.fingerprint || undefined,
                 onProgress: function (done, total, path) {
                     report(hooks, Math.round(done / total * 100),
                         'Extracting (' + done + '/' + total + ') ' + path.substring(1));
