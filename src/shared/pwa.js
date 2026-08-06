@@ -50,7 +50,7 @@ function registerServiceWorker() {
             setInterval(() => reg.update(), 30 * 60 * 1000);
 
             const promptUpdate = (worker) => {
-                if (confirm('Kirikiroid2 Web 有新版本可用，是否重新加载？')) {
+                if (confirm('有新版本可用，是否重新加载？')) {
                     worker.postMessage('skipWaiting');
                 }
             };

@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://krkr2.fenghengzhi.com/sitemap.xml
+Disallow: /admin
+Disallow: /play/
+Disallow: /api/

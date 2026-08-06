@@ -166,12 +166,13 @@ onUnmounted(() => {
 <template>
     <!-- 容器即全屏目标：ResizeObserver 观察的也是它，两者对齐 -->
     <div ref="container" class="stage">
+        <!-- 不绑 dblclick 切全屏：galgame 推文本就是快速连点，必然误触发。
+             全屏入口只留边缘工具条的按钮和 F 键。 -->
         <canvas
             ref="canvas"
             id="canvas"
             tabindex="-1"
-            @contextmenu.prevent
-            @dblclick="toggleFullscreen" />
+            @contextmenu.prevent />
     </div>
 
     <EdgeToolbar

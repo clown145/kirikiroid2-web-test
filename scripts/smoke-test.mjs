@@ -5,6 +5,36 @@ import puppeteer from 'puppeteer-core';
 
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const BASE = 'http://localhost:8787';
+const PASSWORD = process.env.ADMIN_PASSWORD || 'test-password-123';
+
+// 库默认是空的（产品就这么设计的），而画廊/后台的断言都要求至少有一个条目。
+// 所以自己建一条、测完删掉，别指望库里留着上次的脏数据。
+// downloadUrl 指向不可达域名：只测列表渲染，不需要真把游戏跑起来。
+async function login() {
+    const res = await fetch(`${BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: PASSWORD })
+    });
+    if (!res.ok) throw new Error(`登录失败 (${res.status})，检查 .dev.vars 里的 ADMIN_PASSWORD_HASH`);
+    return (res.headers.get('set-cookie') || '').split(';')[0];
+}
+
+const cookie = await login();
+
+const fixtureId = await (async () => {
+    const res = await fetch(`${BASE}/api/admin/games`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: cookie },
+        body: JSON.stringify({
+            title: '冒烟测试用条目',
+            downloadUrl: 'https://example.invalid/never.xp3',
+            published: 1
+        })
+    });
+    if (!res.ok) throw new Error(`创建测试条目失败 (${res.status})`);
+    return (await res.json()).game.id;
+})();
 
 const browser = await puppeteer.launch({
     executablePath: CHROME,
@@ -16,6 +46,10 @@ let failures = 0;
 
 async function visit(path, { wait = 1800, assert } = {}) {
     const page = await browser.newPage();
+    // SW 会拿上一次构建的 chunk / 缓存的 API 响应顶掉新内容，绕开它
+    const cdp = await page.createCDPSession();
+    await cdp.send('Network.enable');
+    await cdp.send('Network.setBypassServiceWorker', { bypass: true });
     const errors = [];
     const badRequests = [];
 
@@ -125,6 +159,9 @@ await visit('/play/local', {
 // --- 后台真实登录流程（走 UI，不是直接打 API）---
 {
     const page = await browser.newPage();
+    const cdp = await page.createCDPSession();
+    await cdp.send('Network.enable');
+    await cdp.send('Network.setBypassServiceWorker', { bypass: true });
     console.log('\n=== /admin 登录流程 ===');
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -132,7 +169,7 @@ await visit('/play/local', {
     await page.goto(BASE + '/admin', { waitUntil: 'networkidle2' });
     await new Promise((r) => setTimeout(r, 800));
 
-    await page.type('input[type="password"]', 'test-password-123');
+    await page.type('input[type="password"]', PASSWORD);
     await page.click('button[type="submit"]');
     await new Promise((r) => setTimeout(r, 2500));
 
@@ -163,5 +200,12 @@ await visit('/play/local', {
 }
 
 await browser.close();
+
+// 清掉测试条目，别把库弄脏
+await fetch(`${BASE}/api/admin/games/${fixtureId}`, {
+    method: 'DELETE',
+    headers: { Cookie: cookie }
+}).catch(() => {});
+
 console.log(failures ? `\n✗ ${failures} 项问题` : '\n✓ 全部通过');
 process.exit(failures ? 1 : 0);

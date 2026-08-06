@@ -3,55 +3,21 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="description" content="Kirikiroid2 Web — Run Kirikiri2 visual novels directly in your browser. Load .xp3 game files or folders, no installation required. Supports save/load, WebGL rendering, and mobile devices.">
-    <meta name="keywords" content="Kirikiroid2, Kirikiri2, KirikiriZ, KrKr2, KrKrZ, visual novel, browser, WebAssembly, xp3, galgame">
-    <link rel="canonical" href="https://krkr2.fenghengzhi.com/">
-    <meta property="og:title" content="Kirikiroid2 Web — Browser-based Kirikiri2 Engine">
-    <meta property="og:description" content="Run Kirikiri2 visual novels directly in your browser. Load .xp3 game files, no installation required.">
+    <meta name="description" content="在浏览器里直接玩 Kirikiri2（吉里吉里2）引擎的视觉小说，无需安装。支持存档、全屏，手机和电脑都能跑。">
+    <meta name="keywords" content="视觉小说, galgame, 吉里吉里, Kirikiri2, xp3, 浏览器, 在线">
+    <meta property="og:title" content="游戏库">
+    <meta property="og:description" content="在浏览器里直接玩视觉小说，无需安装。">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://krkr2.fenghengzhi.com/">
-    <meta property="og:site_name" content="Kirikiroid2 Web">
+    <meta property="og:site_name" content="游戏库">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Kirikiroid2 Web — Browser-based Kirikiri2 Engine">
-    <meta name="twitter:description" content="Run Kirikiri2 visual novels directly in your browser. Load .xp3 game files, no installation required.">
-    <title>Kirikiroid2 Web — Browser-based Kirikiri2 Visual Novel Engine</title>
+    <title>游戏库</title>
     <meta name="theme-color" content="#0a0a0b">
-
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "Kirikiroid2 Web",
-      "alternateName": ["KrKr2 Web", "吉里吉里2 Web"],
-      "url": "https://krkr2.fenghengzhi.com/",
-      "applicationCategory": "GameApplication",
-      "operatingSystem": "Any (WebAssembly)",
-      "browserRequirements": "Requires WebAssembly and WebGL",
-      "description": "Browser port of Kirikiroid2, the Android port of the Kirikiri2 visual novel engine. Run .xp3 game archives directly in your browser via WebAssembly, with persistent saves and no installation required.",
-      "inLanguage": ["en", "zh", "ja"],
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-      "author": {
-        "@type": "Person",
-        "name": "fenghengzhi",
-        "url": "https://github.com/fenghengzhi"
-      }
-    }
-    </script>
-
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-X4FRTWKHGR"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-X4FRTWKHGR');
-    </script>
 
     <link rel="manifest" href="/manifest.webmanifest">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Kirikiroid2 Web">
+    <meta name="apple-mobile-web-app-title" content="游戏库">
     <link rel="icon" href="/pwa/icon-192.png" type="image/png">
     <link rel="apple-touch-icon" href="/pwa/icon-192.png">
 
@@ -63,46 +29,39 @@
 <body>
     <noscript>
         <div style="padding:40px 20px;text-align:center;color:#fafafa;background:#0a0a0b;min-height:100vh;max-width:720px;margin:0 auto;line-height:1.7;font-family:system-ui,sans-serif;">
-            <h1 style="margin-bottom:16px;">Kirikiroid2 Web</h1>
-            <p style="margin-bottom:12px;">Kirikiroid2 Web is a browser port of <strong>Kirikiroid2</strong> — the Android port of the Kirikiri2 (吉里吉里2) visual novel engine that powers hundreds of Japanese ADV / galgame titles — compiled to WebAssembly via Emscripten.</p>
-            <p style="margin-bottom:12px;">Load .xp3 game archives or game folders directly in your browser. Save data persists locally in IndexedDB; nothing is uploaded.</p>
-            <p style="margin-bottom:12px;">This application requires JavaScript and WebAssembly to run. Please enable JavaScript and reload the page.</p>
-            <p><a href="https://github.com/fenghengzhi/krkr2" style="color:#a1a1aa;">Source code on GitHub</a></p>
+            <h1 style="margin-bottom:16px;">游戏库</h1>
+            <p style="margin-bottom:12px;">本站需要 JavaScript 和 WebAssembly 才能运行。请在浏览器中启用 JavaScript 后重新加载页面。</p>
         </div>
     </noscript>
 
     <div id="app" v-cloak></div>
 
-    <!-- SEO 长文：对收录有价值，放在应用之后作为页脚内容 -->
     <footer class="site-footer">
         <details>
-            <summary>关于 Kirikiroid2 Web</summary>
+            <summary>关于本站</summary>
             <div class="about">
-                <p>Kirikiroid2 Web is a browser port of <strong>Kirikiroid2</strong> — the Android port of the Kirikiri2 (吉里吉里2) visual novel engine, which powers hundreds of Japanese ADV / galgame titles. The Kirikiroid2 codebase is compiled to WebAssembly via Emscripten, so games run entirely client-side — your save data and game files never leave your device.</p>
-                <p>This port targets binary compatibility with the original Android <code>libkrkr2.so</code> runtime, reimplementing the same TJS2 scripting engine, XP3 archive loader, and rendering pipeline.</p>
+                <p>在浏览器里直接运行 Kirikiri2（吉里吉里2）引擎的视觉小说，不需要安装任何东西。引擎经 WebAssembly 编译，游戏完全在你的设备上运行——存档和游戏文件都不会上传。</p>
 
-                <h3>Features</h3>
+                <h3>用法</h3>
                 <ul>
-                    <li>Load <code>.xp3</code> game archives via drag &amp; drop, file picker, or folder upload</li>
-                    <li>Extract and run games packaged as <code>.zip</code> archives</li>
-                    <li>Direct directory access on Chromium browsers via the File System Access API</li>
-                    <li>Persistent save data in named save spaces, backed by IndexedDB</li>
-                    <li>Export and import save data as <code>.zip</code> for backup or device transfer</li>
-                    <li>WebGL hardware-accelerated rendering with mobile shader compatibility</li>
-                    <li>Full TJS2 scripting engine — runs original game scripts unmodified</li>
+                    <li>从游戏库点开任意一作，直接开始</li>
+                    <li>也可以「打开本地文件」，读取自己的 <code>.xp3</code> 档案、<code>.zip</code> 整包或游戏文件夹</li>
+                    <li>存档按游戏自动分开保存，可导出 <code>.zip</code> 备份或换设备时导入</li>
                 </ul>
 
-                <h3>Browser requirements</h3>
-                <p>A modern browser with WebAssembly and WebGL support is required. The site is served with <code>Cross-Origin-Opener-Policy</code> and <code>Cross-Origin-Embedder-Policy</code> headers to enable <code>SharedArrayBuffer</code> and multi-threading. Tested on recent Chrome, Edge, Firefox, and Safari (desktop and mobile).</p>
+                <h3>游戏中</h3>
+                <ul>
+                    <li>画面默认没有任何遮挡。电脑上把鼠标移到屏幕最顶端唤出控制栏</li>
+                    <li>手机上点屏幕顶部中间的小箭头，或从顶边下滑，即可唤出控制栏</li>
+                    <li>控制栏里可以退出游戏、管理存档、切换全屏；<kbd>F</kbd> 键也能切全屏</li>
+                </ul>
 
-                <h3>Open source</h3>
-                <p>Full source code, build instructions, and issue tracker: <a href="https://github.com/fenghengzhi/krkr2" target="_blank" rel="noopener">github.com/fenghengzhi/krkr2</a>.</p>
+                <h3>浏览器要求</h3>
+                <p>需要支持 WebAssembly 与 WebGL 的现代浏览器。推荐用最新版 Chrome / Edge；Safari 需要 27（iOS 27）及以上。手机和平板都能跑。</p>
             </div>
         </details>
 
         <p class="footer-links">
-            <a href="https://github.com/fenghengzhi/krkr2/issues" target="_blank" rel="noopener">Feedback &amp; Issues</a>
-            <span aria-hidden="true">·</span>
             <a href="#" id="force-update-btn" title="清除缓存的应用文件并加载最新版本（存档保留）">强制更新</a>
             <span aria-hidden="true">·</span>
             <span id="build-version"></span>
