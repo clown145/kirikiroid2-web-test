@@ -31,17 +31,40 @@ npx wrangler dev
 
 ## 部署
 
+### 前置：建资源、设密码
+
 ```bash
+npx wrangler d1 create krkr2-games            # 把 uuid 填进 wrangler.jsonc
+npx wrangler kv namespace create RATE_LIMIT   # 把 id 填进 wrangler.jsonc
 npm run db:remote
 
 node scripts/hash-password.js '你的密码'
 npx wrangler secret put ADMIN_PASSWORD_HASH   # 粘贴上一步输出的 pbkdf2$... 串
 npx wrangler secret put SESSION_SECRET        # openssl rand -base64 32
-
-npm run deploy
 ```
 
+`wrangler.jsonc` 里的 id 不换掉，部署一定失败（构建结束时会有提示）。
 改密码就是重新 `wrangler secret put ADMIN_PASSWORD_HASH`，没有用户表要维护。
+
+### 从本地部署
+
+```bash
+npm run deploy:local     # 构建 + 部署
+```
+
+### 从 Cloudflare Workers Builds（连 Git 仓库自动部署）
+
+面板里 **两条命令都要设**：
+
+| 字段 | 值 |
+|---|---|
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy` |
+
+`dist/` 在 `.gitignore` 里，仓库中不存在，必须由 build command 现场生成。
+只配 deploy command 会报 `assets.directory ... does not exist`。
+
+Node 版本需 22+（Wrangler 4 的要求）；Cloudflare 构建环境默认已满足。
 
 ### 导入现有的 games.json
 

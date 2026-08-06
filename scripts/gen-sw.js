@@ -187,3 +187,26 @@ console.log(
     `✓ sw.js 已生成 (v${version})\n` +
     `  预缓存 ${precache.length} 个文件 / 产物共 ${files.length} 个，${totalMiB.toFixed(1)} MiB`
 );
+
+// wrangler.jsonc 里的绑定 id 还是占位符时提前喊一声。
+// 构建本身不该失败（本地 --local 不校验这些值），但部署一定会挂，
+// 与其等 wrangler 报一句难懂的错，不如在这里说清楚要跑什么命令。
+try {
+    const cfg = readFileSync(join(root, 'wrangler.jsonc'), 'utf-8');
+    const pending = [];
+    if (cfg.includes('REPLACE_ME_RUN_wrangler_d1_create')) {
+        pending.push('  D1： npx wrangler d1 create krkr2-games            → 填入 database_id');
+    }
+    if (cfg.includes('REPLACE_ME_RUN_wrangler_kv_namespace_create')) {
+        pending.push('  KV： npx wrangler kv namespace create RATE_LIMIT   → 填入 id');
+    }
+    if (pending.length) {
+        console.warn(
+            `\n⚠ wrangler.jsonc 的绑定 id 仍是占位符，部署会失败：\n` +
+            pending.join('\n') +
+            `\n  另需设置 secret：ADMIN_PASSWORD_HASH、SESSION_SECRET（见 README）`
+        );
+    }
+} catch {
+    // 读不到配置不影响构建
+}
