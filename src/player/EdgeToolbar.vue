@@ -23,11 +23,21 @@ const hovering = ref(false);
 const showHint = ref(true);
 // 无悬停能力的设备（手机/平板）：热区靠不住，得给一个能点的把手
 const isTouch = ref(false);
+// 把手已淡出：视觉上彻底消失，命中区收窄但仍在
+const handleDimmed = ref(false);
 
 const HOT_ZONE_PX = 6;
 const AUTO_HIDE_MS = 3000;
 
+// 把手只在最初几秒亮着，之后淡到全透明 —— 它是画面上唯一常驻的遮挡物。
+// 淡掉后**不撤命中区**，只把它收成贴顶的一条窄带：顶边下滑偶尔还是会被
+// 系统手势（下拉通知栏）截走，全屏里又没有 hover 和 F 键，
+// 必须留一个看不见但点得到的逃生口，否则只能杀标签页。
+const HANDLE_FADE_MS = 6000;
+
 let hideTimer = null;
+let fadeTimer = null;
+let hintTimer = null;
 
 function scheduleHide() {
     clearTimeout(hideTimer);
@@ -95,12 +105,16 @@ const TOUCH_OPTS = { passive: true, capture: true };
 onMounted(() => {
     isTouch.value = window.matchMedia('(hover: none)').matches;
 
+    // 一旦淡出就不再自己亮回来：用户已经知道入口在哪，
+    // 再周期性闪出来又变成新的干扰。
+    fadeTimer = setTimeout(() => { handleDimmed.value = true; }, HANDLE_FADE_MS);
+
     window.addEventListener('pointermove', onPointerMove, { passive: true });
     window.addEventListener('touchstart', onTouchStart, TOUCH_OPTS);
     window.addEventListener('touchmove', onTouchMove, TOUCH_OPTS);
     window.addEventListener('keydown', onKeydown);
-    // 提示 4 秒后自行淡出
-    setTimeout(() => { showHint.value = false; }, 4000);
+    // 提示和把手一起退场：提示先走的话，会出现"箭头还亮着但没人解释它"的空档
+    hintTimer = setTimeout(() => { showHint.value = false; }, HANDLE_FADE_MS);
 });
 
 onUnmounted(() => {
@@ -109,6 +123,8 @@ onUnmounted(() => {
     window.removeEventListener('touchmove', onTouchMove, TOUCH_OPTS);
     window.removeEventListener('keydown', onKeydown);
     clearTimeout(hideTimer);
+    clearTimeout(fadeTimer);
+    clearTimeout(hintTimer);
 });
 </script>
 
@@ -121,6 +137,7 @@ onUnmounted(() => {
     <button
         v-if="isTouch && !visible"
         class="handle"
+        :class="{ dimmed: handleDimmed }"
         type="button"
         aria-label="显示控制栏"
         @click="reveal">
@@ -172,7 +189,7 @@ onUnmounted(() => {
     <!-- 一次性提示：告诉用户控制条在哪，随后自行消失 -->
     <Transition name="fade">
         <div v-if="showHint && !visible" class="hint-toast" :class="{ 'below-handle': isTouch }">
-            <template v-if="isTouch">点顶部箭头显示控制栏</template>
+            <template v-if="isTouch">点顶部箭头，或从顶边下滑</template>
             <template v-else>移动到顶部显示控制栏 · <kbd>F</kbd> 全屏</template>
         </div>
     </Transition>
@@ -215,6 +232,31 @@ onUnmounted(() => {
 }
 
 .handle:active { opacity: 1; }
+
+/* 淡出后：视觉上完全消失，但仍留一条 24px 的贴顶命中带。
+   背景/箭头都透明，所以不挡画面；顶边下滑被系统手势吃掉时还能点它兜底。
+   transition 只作用在观感属性上，命中区是瞬时收窄的。 */
+.handle.dimmed {
+    opacity: 0;
+    min-height: 24px;
+    padding: 0;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transition: opacity 1.2s var(--ease);
+}
+
+/* 淡出后再按下时给一点反馈，让人确认自己点中了 */
+.handle.dimmed:active {
+    opacity: 0.7;
+    transition: opacity 80ms var(--ease);
+}
+
+/* 明确表达意图：淡出是纯装饰性的渐变，
+   开了减弱动效就直接切换，不做长过渡 */
+@media (prefers-reduced-motion: reduce) {
+    .handle, .handle.dimmed { transition: none; }
+}
 
 .bar {
     position: fixed;

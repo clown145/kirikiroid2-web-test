@@ -124,6 +124,53 @@ const enterRunningState = (page) => page.evaluate(() => {
     await page.close();
 }
 
+// --- 把手会自行淡出，但不能变成点不到的死入口 ---
+//
+// 常驻的把手是画面上唯一的遮挡物，所以 6 秒后淡到 opacity:0。
+// 但**不能**顺手把命中区也撤了：顶边下滑会被系统手势（下拉通知栏）截走，
+// 全屏里又没有 hover 和 F 键，撤了就只剩杀标签页一条路。
+{
+    const page = await newPage(true);
+    await page.goto(`${BASE}/play/${GAME_ID}`, { waitUntil: 'networkidle2' });
+    await page.waitForSelector('.handle', { timeout: 8000 }).catch(() => {});
+    await enterRunningState(page);
+
+    const before = await page.evaluate(() => {
+        const h = document.querySelector('.handle');
+        return h ? Number(getComputedStyle(h).opacity) : null;
+    });
+    ok('淡出前：把手可见', before !== null && before > 0.2);
+
+    // 等过 HANDLE_FADE_MS(6s) + 过渡(1.2s)
+    await new Promise((r) => setTimeout(r, 7800));
+
+    const after = await page.evaluate(() => {
+        const h = document.querySelector('.handle');
+        if (!h) return null;
+        const r = h.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        return {
+            opacity: Number(getComputedStyle(h).opacity),
+            height: r.height,
+            // opacity:0 仍然可命中（不同于 visibility:hidden / display:none）
+            reachable: !!(hit && hit.closest('.handle'))
+        };
+    });
+    ok('淡出后：视觉上完全透明', after && after.opacity === 0);
+    ok('淡出后：命中区收窄但仍在', after && after.height > 0 && after.height <= 28);
+    ok('淡出后：仍可命中（不是死入口）', after && after.reachable);
+
+    // 最关键的一条：看不见了，但还点得开
+    const r = await page.evaluate(() => {
+        const b = document.querySelector('.handle').getBoundingClientRect();
+        return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+    });
+    await page.touchscreen.tap(r.x, r.y);
+    ok('淡出后：点它仍能展开工具条', await waitForToolbar(page));
+
+    await page.close();
+}
+
 // --- 游戏进行中：顶边下滑 ---
 {
     const page = await newPage(true);
