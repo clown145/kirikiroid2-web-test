@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description" content="Kirikiroid2 Web — Run Kirikiri2 visual novels directly in your browser. Load .xp3 game files or folders, no installation required. Supports save/load, WebGL rendering, and mobile devices.">
     <meta name="keywords" content="Kirikiroid2, Kirikiri2, KirikiriZ, KrKr2, KrKrZ, visual novel, browser, WebAssembly, xp3, galgame">
     <link rel="canonical" href="https://krkr2.fenghengzhi.com/">
@@ -15,7 +15,8 @@
     <meta name="twitter:title" content="Kirikiroid2 Web — Browser-based Kirikiri2 Engine">
     <meta name="twitter:description" content="Run Kirikiri2 visual novels directly in your browser. Load .xp3 game files, no installation required.">
     <title>Kirikiroid2 Web — Browser-based Kirikiri2 Visual Novel Engine</title>
-    <meta name="theme-color" content="#1a1a2e">
+    <meta name="theme-color" content="#0a0a0b">
+
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -28,11 +29,7 @@
       "browserRequirements": "Requires WebAssembly and WebGL",
       "description": "Browser port of Kirikiroid2, the Android port of the Kirikiri2 visual novel engine. Run .xp3 game archives directly in your browser via WebAssembly, with persistent saves and no installation required.",
       "inLanguage": ["en", "zh", "ja"],
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      },
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
       "author": {
         "@type": "Person",
         "name": "fenghengzhi",
@@ -40,286 +37,49 @@
       }
     }
     </script>
+
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-X4FRTWKHGR"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-
         gtag('config', 'G-X4FRTWKHGR');
     </script>
-    <!-- PWA: 静态存在于两种构建；是否真正注册 service worker 由 build-config.js
-         的 pwa 标志在运行时决定（js/ui/pwa.js），不再有构建期的 HTML 分支。 -->
-    <link rel="manifest" href="manifest.webmanifest">
+
+    <link rel="manifest" href="/manifest.webmanifest">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Kirikiroid2 Web">
-    <link rel="apple-touch-icon" href="pwa/icon-192.png">
-    <link rel="stylesheet" href="css/app.css">
-    <!-- 必须在首次绘制和任何 canvas.getContext 之前执行，故同步置于 head。 -->
-    <script src="js/engine/early-boot.js"></script>
+    <link rel="icon" href="/pwa/icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="/pwa/icon-192.png">
+
+    <!-- 引擎不在本页加载（画廊页不需要 wasm）。低优先级预热，
+         让用户点进游戏时 22MB 的 wasm 已经在 HTTP 缓存里。 -->
+    <link rel="prefetch" href="/index.wasm" as="fetch" crossorigin>
+    <link rel="prefetch" href="/index.js" as="script">
 </head>
 <body>
     <noscript>
-        <style>
-            /* Without JS the picker buttons are dead — show the noscript notice instead. */
-            #file-picker { display: none !important; }
-            html, body { overflow: auto !important; }
-        </style>
-        <div style="padding:40px 20px;text-align:center;color:#e0e0e0;background:#1a1a2e;min-height:100vh;max-width:720px;margin:0 auto;line-height:1.7;">
-            <h1 style="color:#e94560;margin-bottom:16px;">Kirikiroid2 Web</h1>
+        <div style="padding:40px 20px;text-align:center;color:#fafafa;background:#0a0a0b;min-height:100vh;max-width:720px;margin:0 auto;line-height:1.7;font-family:system-ui,sans-serif;">
+            <h1 style="margin-bottom:16px;">Kirikiroid2 Web</h1>
             <p style="margin-bottom:12px;">Kirikiroid2 Web is a browser port of <strong>Kirikiroid2</strong> — the Android port of the Kirikiri2 (吉里吉里2) visual novel engine that powers hundreds of Japanese ADV / galgame titles — compiled to WebAssembly via Emscripten.</p>
             <p style="margin-bottom:12px;">Load .xp3 game archives or game folders directly in your browser. Save data persists locally in IndexedDB; nothing is uploaded.</p>
             <p style="margin-bottom:12px;">This application requires JavaScript and WebAssembly to run. Please enable JavaScript and reload the page.</p>
-            <p><a href="https://github.com/fenghengzhi/krkr2" style="color:#e94560;">Source code on GitHub</a></p>
+            <p><a href="https://github.com/fenghengzhi/krkr2" style="color:#a1a1aa;">Source code on GitHub</a></p>
         </div>
     </noscript>
 
-    <div id="loading" class="hidden" data-nosnippet>
-        <h1>Kirikiroid2 Web</h1>
-        <div id="progress-bar">
-            <div id="progress-fill"></div>
-        </div>
-        <div id="status">Loading...</div>
-    </div>
+    <div id="app" v-cloak></div>
 
-    <div id="error-overlay" data-nosnippet>
-        <div id="error-box">
-            <h2>Error</h2>
-            <p id="error-message"></p>
-            <button id="error-update-btn">Force Update &amp; Reload</button>
-        </div>
-    </div>
-
-    <div id="container">
-        <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
-    </div>
-
-    <div id="save-space-picker" data-nosnippet style="display:none !important;">
-        <div id="space-box">
-            <h1>Save Spaces</h1>
-            <p class="subtitle">Select or create a save space to persist your game data</p>
-            <div id="space-list"></div>
-            <div id="space-create">
-                <input type="text" id="space-name-input" placeholder="New space name...">
-                <button id="space-create-btn">Create</button>
-            </div>
-            <div id="space-actions">
-                <button id="space-import-btn">Import ZIP</button>
-                <button id="space-skip-btn">Skip (no saving)</button>
-            </div>
-            <div id="space-status"></div>
-        </div>
-    </div>
-    <!-- Modern Vue 3 Game Gallery & Admin Overhaul -->
-    <div id="gallery-root" data-nosnippet v-cloak>
-        <!-- Top Navigation Bar -->
-        <header class="nav-bar">
-            <div class="nav-brand">
-                <svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm3-3c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
-                <span>Kirikiroid2 Gallery</span>
-            </div>
-            <div class="nav-actions">
-                <button class="btn-glass" @click="openLocalUpload">
-                    <span>📂 打开本地文件</span>
-                </button>
-                <button class="btn-glass btn-primary-glass" @click="openAdmin">
-                    <span>⚙️ 管理后台</span>
-                </button>
-            </div>
-        </header>
-
-        <!-- Main Gallery Body -->
-        <main class="gallery-body">
-            <div class="gallery-header">
-                <h1 class="gallery-title">游戏库 ({{ filteredGames.length }})</h1>
-                <div class="gallery-search">
-                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                    <input type="text" v-model="searchQuery" placeholder="搜索游戏标题...">
-                </div>
-            </div>
-
-            <!-- Game Cards Grid -->
-            <div v-if="filteredGames.length > 0" class="game-grid">
-                <div v-for="game in filteredGames" :key="game.id" class="game-card" @click="playGame(game)">
-                    <div class="game-cover-wrap">
-                        <img :src="game.coverUrl || 'pwa/icon-512.png'" class="game-cover-img" :alt="game.title" loading="lazy" crossorigin="anonymous" @error="(e) => e.target.src='pwa/icon-512.png'">
-                        <div class="game-overlay">
-                            <div class="play-btn-circle">
-                                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="game-info">
-                        <div class="game-title">{{ game.title }}</div>
-                        <div class="game-desc">{{ game.description || '暂无描述' }}</div>
-                        <div class="game-tags" v-if="game.tags && game.tags.length">
-                            <span v-for="tag in game.tags" :key="tag" class="game-tag">{{ tag }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Empty State -->
-            <div v-else class="empty-gallery">
-                <h3>暂无匹配的游戏</h3>
-                <p>未在仓库中找到任何符合条件的游戏描述。点击管理后台或打开本地文件进行配置。</p>
-                <button class="btn-glass btn-primary-glass" @click="openAdmin">添加首个游戏</button>
-            </div>
-        </main>
-
-        <!-- Admin Drawer / Modal -->
-        <div v-if="showAdmin" class="admin-drawer-overlay" @click.self="closeAdmin">
-            <div class="admin-drawer">
-                <div class="admin-header">
-                    <h2>⚙️ 模拟器游戏画廊管理后台</h2>
-                    <button class="modal-close-btn" @click="closeAdmin">&times;</button>
-                </div>
-                <div class="admin-body">
-                    <!-- Config Import/Export Toolbar -->
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; background: rgba(30,41,59,0.5); padding:12px 16px; border-radius:10px;">
-                        <span style="font-size:13px; color:#94a3b8;">配置自动保存至 LocalStorage。已下载资源的缓存可一键清空。</span>
-                        <div style="display:flex; gap:8px;">
-                            <button class="btn-glass" @click="clearAllCaches" style="font-size:12px; padding:6px 10px; color:#f59e0b; border-color:rgba(245,158,11,0.3);">🧹 清理已下载缓存</button>
-                            <button class="btn-glass" @click="exportConfig" style="font-size:12px; padding:6px 10px;">📥 导出 JSON</button>
-                            <label class="btn-glass" style="font-size:12px; padding:6px 10px; cursor:pointer;">
-                                📤 导入 JSON
-                                <input type="file" accept=".json" @change="importConfig" style="display:none;">
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Add / Edit Form -->
-                    <div style="background: rgba(15,23,42,0.6); padding:20px; border-radius:12px; border:1px solid rgba(255,255,255,0.08); margin-bottom:24px;">
-                        <h3 style="font-size:15px; margin-bottom:16px; color:#c084fc;">
-                            {{ isEditing ? '✏️ 编辑游戏配置' : '➕ 新增游戏数据' }}
-                        </h3>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>游戏名称 (*)</label>
-                                <input type="text" v-model="editForm.title" placeholder="例如：冥契的牧神节">
-                            </div>
-                            <div class="form-group">
-                                <label>封面图片 URL</label>
-                                <input type="text" v-model="editForm.coverUrl" placeholder="https://example.com/cover.jpg">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>资源下载 URL (.zip 或 .xp3)</label>
-                                <input type="text" v-model="editForm.downloadUrl" placeholder="https://example.com/game.zip">
-                                <div class="form-hint">支持可公开访问的完整路径游戏压缩包直链</div>
-                            </div>
-                            <div class="form-group">
-                                <label>启动 XP3 文件名 (可选)</label>
-                                <input type="text" v-model="editForm.entryXp3" placeholder="例如：data.xp3 (默认为空自动识别)">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>分类标签 (用逗号分隔)</label>
-                            <input type="text" v-model="editForm.tags" placeholder="ADV, 汉化版, 恋爱">
-                        </div>
-                        <div class="form-group">
-                            <label>游戏简介说明</label>
-                            <input type="text" v-model="editForm.description" placeholder="关于该游戏的简要介绍...">
-                        </div>
-                        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
-                            <button v-if="isEditing" class="btn-glass" @click="resetForm">取消编辑</button>
-                            <button class="btn-glass btn-primary-glass" @click="saveGame">
-                                {{ isEditing ? '保存修改' : '确认添加' }}
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Games List Table -->
-                    <h3 style="font-size:15px; margin-bottom:12px; color:#f8fafc;">现有游戏列表 ({{ games.length }})</h3>
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th style="width:60px;">封面</th>
-                                <th>标题</th>
-                                <th>资源 URL</th>
-                                <th>标签</th>
-                                <th style="width:120px; text-align:right;">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="g in games" :key="g.id">
-                                <td>
-                                    <img :src="g.coverUrl || 'pwa/icon-192.png'" class="admin-table-cover" @error="(e) => e.target.src='pwa/icon-192.png'">
-                                </td>
-                                <td>
-                                    <div style="font-weight:600; color:#fff;">{{ g.title }}</div>
-                                    <div style="font-size:11px; color:#64748b;" v-if="g.entryXp3">入口: {{ g.entryXp3 }}</div>
-                                </td>
-                                <td>
-                                    <div style="font-size:12px; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#94a3b8;">
-                                        {{ g.downloadUrl || '(未设置 - 需选本地文件)' }}
-                                    </div>
-                                </td>
-                                <td>
-                                    <span v-for="t in g.tags" :key="t" class="game-tag" style="margin-right:4px;">{{ t }}</span>
-                                </td>
-                                <td style="text-align:right;">
-                                    <button class="btn-glass" style="font-size:11px; padding:4px 8px; margin-right:4px;" @click="openEdit(g)">编辑</button>
-                                    <button class="btn-glass" style="font-size:11px; padding:4px 8px; color:#ef4444; border-color:rgba(239,68,68,0.3);" @click="removeGame(g.id)">删除</button>
-                                </td>
-                            </tr>
-                            <tr v-if="games.length === 0">
-                                <td colspan="5" style="text-align:center; color:#64748b; padding:24px;">暂无配置游戏数据，请在上方表单中新增。</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="admin-footer">
-                    <span class="badge-count">共 {{ games.length }} 个数据节点</span>
-                    <button class="btn-glass" @click="closeAdmin">关闭面板</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Floating Controls during Game Session -->
-        <div id="game-controls-bar" v-if="isGameActive" style="pointer-events: auto;">
-            <span style="font-size:13px; font-weight:600; color:#e2e8f0; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                🎮 {{ activeGameTitle }}
-            </span>
-            <button class="btn-glass" style="font-size:12px; padding:4px 10px;" @click="exitToGallery">
-                🚪 退出游戏回大厅
-            </button>
-        </div>
-    </div>
-
-    <!-- 隐藏原生的废弃画廊静态弹出窗口, 由 Vue 3 接管 -->
-    <div id="file-picker" class="modal-overlay" style="display:none !important;">
-        <div class="modal-container" style="max-width:680px;">
-            <div class="modal-header">
-                <h2>打开本地游戏文件</h2>
-                <button class="modal-close-btn" onclick="closeLocalPicker()">&times;</button>
-            </div>
-            <div class="modal-body" style="text-align:center;">
-                <p class="subtitle">在浏览器中选择本地的 .xp3 文件或全包 .zip 游戏运行</p>
-            <div id="drop-zone">
-                <div class="icon">&#128193;</div>
-                <div class="label">Drag & drop .xp3 file here</div>
-                <div class="hint">or use the buttons below</div>
-            </div>
-            <div class="picker-buttons">
-                <button id="pick-dir-api-btn" class="primary" style="display:none">Open Game Directory</button>
-                <div id="picker-divider" class="picker-divider" style="display:none">or load a copy into memory</div>
-                <button id="pick-file-btn">Select .xp3 File</button>
-                <button id="pick-dir-btn">Upload Folder</button>
-                <button id="pick-zip-btn" style="display:none">Select .zip File</button>
-            </div>
-            <div id="picker-status"></div>
-            <div id="picker-progress"><div id="picker-progress-fill"></div></div>
-            <div id="engine-status" data-nosnippet aria-live="polite"></div>
-            <div class="feedback-link"><a href="https://github.com/fenghengzhi/krkr2/issues" target="_blank" rel="noopener">Feedback & Issues</a> &middot; <a href="#" id="force-update-btn" title="Clear cached app files and reload the latest version (save data is kept)">Force Update</a> &middot; <span id="build-version"></span></div>
-            <section class="about-content">
-                <h2>About Kirikiroid2 Web</h2>
+    <!-- SEO 长文：对收录有价值，放在应用之后作为页脚内容 -->
+    <footer class="site-footer">
+        <details>
+            <summary>关于 Kirikiroid2 Web</summary>
+            <div class="about">
                 <p>Kirikiroid2 Web is a browser port of <strong>Kirikiroid2</strong> — the Android port of the Kirikiri2 (吉里吉里2) visual novel engine, which powers hundreds of Japanese ADV / galgame titles. The Kirikiroid2 codebase is compiled to WebAssembly via Emscripten, so games run entirely client-side — your save data and game files never leave your device.</p>
-                <p>This port targets binary compatibility with the original Android <code>libkrkr2.so</code> runtime, reimplementing the same TJS2 scripting engine, XP3 archive loader, and rendering pipeline. The goal is not just functional equivalence but architectural fidelity to the upstream binary.</p>
+                <p>This port targets binary compatibility with the original Android <code>libkrkr2.so</code> runtime, reimplementing the same TJS2 scripting engine, XP3 archive loader, and rendering pipeline.</p>
 
                 <h3>Features</h3>
                 <ul>
@@ -332,67 +92,29 @@
                     <li>Full TJS2 scripting engine — runs original game scripts unmodified</li>
                 </ul>
 
-                <h3>How to use</h3>
-                <ol>
-                    <li>Obtain an <code>.xp3</code> archive or game folder for a Kirikiri2 game you own.</li>
-                    <li>Drag the file onto the drop zone above, or use one of the buttons.</li>
-                    <li>Choose or create a save space when prompted — your saves persist between sessions in the browser.</li>
-                </ol>
-                <p>You can also auto-load a game via URL parameters: <code>?xp3=&lt;url&gt;</code> loads a single archive, and <code>?game=&lt;url&gt;</code> loads a ZIP-packaged game directory.</p>
-
                 <h3>Browser requirements</h3>
                 <p>A modern browser with WebAssembly and WebGL support is required. The site is served with <code>Cross-Origin-Opener-Policy</code> and <code>Cross-Origin-Embedder-Policy</code> headers to enable <code>SharedArrayBuffer</code> and multi-threading. Tested on recent Chrome, Edge, Firefox, and Safari (desktop and mobile).</p>
 
                 <h3>Open source</h3>
-                <p>Kirikiroid2 Web is open source. The full source code, build instructions, and issue tracker are on GitHub: <a href="https://github.com/fenghengzhi/krkr2" target="_blank" rel="noopener">github.com/fenghengzhi/krkr2</a>.</p>
-            </section>
+                <p>Full source code, build instructions, and issue tracker: <a href="https://github.com/fenghengzhi/krkr2" target="_blank" rel="noopener">github.com/fenghengzhi/krkr2</a>.</p>
             </div>
-            <div class="modal-footer">
-                <button class="btn-action" onclick="closeLocalPicker()">关闭</button>
-            </div>
-        </div>
-    </div>
-    <div id="xp3-selector" data-nosnippet>
-        <div id="selector-box">
-            <h2>Select Game Archive</h2>
-            <p class="subtitle">Multiple .xp3 files found. Choose one to start:</p>
-            <div id="xp3-list"></div>
-        </div>
-    </div>
+        </details>
 
-    <input type="file" id="file-input" style="display:none;">
-    <input type="file" id="dir-input" webkitdirectory style="display:none;">
-    <input type="file" id="zip-input" accept=".zip,application/zip,application/x-zip-compressed" style="display:none;">
-    <input type="file" id="space-import-input" accept=".zip" style="display:none;">
+        <p class="footer-links">
+            <a href="https://github.com/fenghengzhi/krkr2/issues" target="_blank" rel="noopener">Feedback &amp; Issues</a>
+            <span aria-hidden="true">·</span>
+            <a href="#" id="force-update-btn" title="清除缓存的应用文件并加载最新版本（存档保留）">强制更新</a>
+            <span aria-hidden="true">·</span>
+            <span id="build-version"></span>
+        </p>
+    </footer>
 
-    <script src="js/vendor/vue.global.prod.js"></script>
-    <script src="js/vendor/jszip.min.js"></script>
-    <script src="vlfs.js?v=opfs-zip-cache-v2"></script>
+    <!-- 构建配置。classic script，先于下面的 module 执行，
+         为 pwa.js 提供 KrKr2Config（buildVersion / pwa 开关 / assetBase）。 -->
+    <script src="/build-config.js"></script>
+    <script src="/js/config.js"></script>
 
-    <!-- 构建注入的配置。源码树直接开页面时该文件不存在，classic script 的 404
-         只报错不中断解析，随后的 js/config.js 负责填开发默认值。 -->
-    <script src="build-config.js"></script>
-    <script src="js/config.js"></script>
-
-    <!-- 引擎层：wasm 引导与平台适配。产品前端整体删掉后这几支仍能独立跑引擎。
-         顺序即依赖顺序：守卫 → 内存 → FS 工具 → 存档库 → VLFS 桥 → facade。 -->
-    <script src="js/engine/boot-guards.js"></script>
-    <script src="js/engine/memory.js"></script>
-    <script src="js/engine/fs-util.js"></script>
-    <script src="js/storage/idb.js"></script>
-    <script src="js/engine/vlfs-bridge.js"></script>
-    <script src="js/engine/engine.js"></script>
-
-    <!-- 数据源加载器：只把字节注册进 VLFS，进度经回调上报，不碰 DOM。 -->
-    <script src="js/loaders/dispatch.js"></script>
-    <script src="js/loaders/remote.js"></script>
-    <script src="js/loaders/local.js"></script>
-
-    <!-- 产品前端：只消费 window.KrKr2Engine，可整体替换。 -->
-    <script src="js/ui/shell-ui.js"></script>
-    <script src="js/ui/space-ui.js"></script>
-    <script src="js/ui/pwa.js"></script>
-    <script src="js/app.js"></script>
-    <script src="js/ui/gallery-app.js"></script>
+    <script type="module" src="/src/gallery/main.js"></script>
+    <script type="module" src="/src/shared/pwa.js"></script>
 </body>
 </html>

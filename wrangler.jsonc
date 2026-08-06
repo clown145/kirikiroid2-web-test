@@ -1,0 +1,40 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "krkr2-web",
+  "main": "worker/index.js",
+  "compatibility_date": "2025-01-01",
+
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Worker 代码先跑，未命中路由的请求才交给静态资源。
+    // /play/* 与 /admin* 需要 Worker 改写目标 HTML，所以不能让资源层抢先响应。
+    "run_worker_first": true
+  },
+
+  "observability": { "enabled": true },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "krkr2-games",
+      // 跑 `wrangler d1 create krkr2-games`，把返回的 uuid 换掉这里。
+      // 本地开发（--local）不校验这个值，随便填也能跑；部署前必须换成真的。
+      "database_id": "REPLACE_ME_RUN_wrangler_d1_create",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  "kv_namespaces": [
+    {
+      "binding": "RATE_LIMIT",
+      // 跑 `wrangler kv namespace create RATE_LIMIT`，把返回的 id 换掉这里。
+      "id": "REPLACE_ME_RUN_wrangler_kv_namespace_create"
+    }
+  ]
+
+  // Secrets（不写在此文件，用 wrangler secret put 设置）：
+  //   ADMIN_PASSWORD_HASH   pbkdf2$<iters>$<b64salt>$<b64hash>
+  //                         用 npm run hash-password '你的密码' 生成
+  //   SESSION_SECRET        openssl rand -base64 32
+}

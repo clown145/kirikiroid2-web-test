@@ -1,0 +1,167 @@
+// 浏览器冒烟测试：抓控制台错误、失败请求，并断言关键 UI 真的渲染出来。
+// 静态检查看不出运行时错误，这一层专门补这个。
+
+import puppeteer from 'puppeteer-core';
+
+const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const BASE = 'http://localhost:8787';
+
+const browser = await puppeteer.launch({
+    executablePath: CHROME,
+    headless: 'new',
+    args: ['--no-sandbox', '--disable-dev-shm-usage']
+});
+
+let failures = 0;
+
+async function visit(path, { wait = 1800, assert } = {}) {
+    const page = await browser.newPage();
+    const errors = [];
+    const badRequests = [];
+
+    page.on('console', (m) => {
+        if (m.type() === 'error') errors.push(m.text());
+    });
+    page.on('pageerror', (e) => errors.push('[pageerror] ' + e.message));
+    page.on('requestfailed', (r) => {
+        badRequests.push(`${r.failure()?.errorText} ${r.url()}`);
+    });
+    page.on('response', (r) => {
+        if (r.status() >= 400) badRequests.push(`HTTP ${r.status()} ${r.url()}`);
+    });
+
+    console.log(`\n=== ${path} ===`);
+    try {
+        await page.goto(BASE + path, { waitUntil: 'networkidle2', timeout: 30000 });
+    } catch (e) {
+        console.log('  导航超时/失败: ' + e.message.split('\n')[0]);
+    }
+    await new Promise((r) => setTimeout(r, wait));
+
+    if (assert) {
+        const result = await assert(page);
+        for (const [label, ok] of Object.entries(result)) {
+            console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${label}`);
+            if (!ok) failures++;
+        }
+    }
+
+    // 预期内的噪音：
+    //   - 本地没有真游戏数据、外链游戏包/图床够不着
+    //   - /api/admin/me 的 401 是设计如此：前端靠它判断未登录
+    const ignorable = /favicon|googletagmanager|gtag|google-analytics|r2\.kisaki|szyh\.kisaki|ciallo|ERR_INTERNET|ERR_NAME|ERR_CONNECTION|ERR_ABORTED|Failed to load resource: net::/i;
+    const expected401 = /\/api\/admin\/me/;
+
+    const realErrors = errors.filter((e) => !ignorable.test(e) && !/401/.test(e));
+    const realBad = badRequests.filter((r) => !ignorable.test(r) && !expected401.test(r));
+
+    if (realErrors.length) {
+        console.log('  控制台错误:');
+        realErrors.slice(0, 8).forEach((e) => console.log('    ! ' + e.slice(0, 180)));
+        failures += realErrors.length;
+    }
+    if (realBad.length) {
+        console.log('  失败请求:');
+        realBad.slice(0, 8).forEach((r) => console.log('    ! ' + r.slice(0, 180)));
+        failures += realBad.length;
+    }
+    if (!realErrors.length && !realBad.length) console.log('  无控制台错误 / 无失败请求');
+
+    await page.close();
+}
+
+// --- 画廊页 ---
+await visit('/', {
+    assert: async (page) => ({
+        '渲染出游戏卡片': (await page.$$('.card')).length > 0,
+        '标题为“游戏库”': (await page.$eval('h1', (e) => e.textContent).catch(() => '')) === '游戏库',
+        '卡片链接指向 /play/': (await page.$$eval('.card', (els) =>
+            els.every((e) => e.getAttribute('href')?.startsWith('/play/'))).catch(() => false)),
+        '封面走 /api/cover 代理': (await page.$$eval('.card img', (els) =>
+            els.length === 0 || els.every((e) => e.getAttribute('src')?.startsWith('/api/cover/'))).catch(() => false)),
+        '搜索框存在': !!(await page.$('.search input'))
+    })
+});
+
+// --- 后台登录 ---
+await visit('/admin', {
+    assert: async (page) => {
+        const bodyText = await page.evaluate(() => document.body.innerText);
+        const scripts = await page.evaluate(() =>
+            performance.getEntriesByType('resource').map((r) => r.name).join('\n'));
+        return {
+            '显示登录表单': !!(await page.$('input[type="password"]')),
+            '未登录不下载后台 chunk': !/GamesAdmin/.test(scripts),
+            '有返回游戏库链接': bodyText.includes('返回游戏库')
+        };
+    }
+});
+
+// --- 播放页（本地文件模式，不需要真游戏数据）---
+await visit('/play/local', {
+    wait: 4000,
+    assert: async (page) => {
+        const hasEngine = await page.evaluate(() => ({
+            engine: typeof window.KrKr2Engine?.boot === 'function',
+            vlfs: typeof window.VLFS !== 'undefined',
+            idb: typeof window.KrKr2IDB?.listSpaces === 'function',
+            config: typeof window.KrKr2Config?.assetBase === 'string',
+            assetBase: window.KrKr2Config?.assetBase,
+            crossOriginIsolated: window.crossOriginIsolated
+        }));
+        console.log('    assetBase =', hasEngine.assetBase,
+                    '| crossOriginIsolated =', hasEngine.crossOriginIsolated);
+        return {
+            'KrKr2Engine 已就绪': hasEngine.engine,
+            'VLFS 已加载': hasEngine.vlfs,
+            'KrKr2IDB 已加载': hasEngine.idb,
+            'assetBase 配置存在': hasEngine.config,
+            '跨源隔离生效(SharedArrayBuffer 可用)': hasEngine.crossOriginIsolated === true,
+            '显示本地文件选择器': !!(await page.$('.drop'))
+        };
+    }
+});
+
+// --- 后台真实登录流程（走 UI，不是直接打 API）---
+{
+    const page = await browser.newPage();
+    console.log('\n=== /admin 登录流程 ===');
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+
+    await page.goto(BASE + '/admin', { waitUntil: 'networkidle2' });
+    await new Promise((r) => setTimeout(r, 800));
+
+    await page.type('input[type="password"]', 'test-password-123');
+    await page.click('button[type="submit"]');
+    await new Promise((r) => setTimeout(r, 2500));
+
+    const after = await page.evaluate(() => ({
+        hasTable: !!document.querySelector('table'),
+        hasNewButton: document.body.innerText.includes('新增游戏'),
+        rowCount: document.querySelectorAll('tbody tr').length,
+        stillLogin: !!document.querySelector('input[type="password"]'),
+        loadedAdminChunk: performance.getEntriesByType('resource')
+            .some((r) => /GamesAdmin/.test(r.name))
+    }));
+
+    const checks = {
+        '登录后进入后台': !after.stillLogin,
+        '渲染出游戏表格': after.hasTable,
+        '有新增按钮': after.hasNewButton,
+        [`列出 ${after.rowCount} 个条目`]: after.rowCount > 0,
+        '登录后才加载后台 chunk': after.loadedAdminChunk,
+        '无页面异常': errors.length === 0
+    };
+    for (const [label, ok] of Object.entries(checks)) {
+        console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${label}`);
+        if (!ok) failures++;
+    }
+    if (errors.length) errors.slice(0, 5).forEach((e) => console.log('    ! ' + e.slice(0, 160)));
+
+    await page.close();
+}
+
+await browser.close();
+console.log(failures ? `\n✗ ${failures} 项问题` : '\n✓ 全部通过');
+process.exit(failures ? 1 : 0);
