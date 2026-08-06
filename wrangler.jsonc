@@ -16,11 +16,11 @@
 
   "d1_databases": [
     {
+      // binding 必须是 DB —— worker/ 里用的是 env.DB，
+      // 不是 wrangler create 建议的 krkr2_games
       "binding": "DB",
       "database_name": "krkr2-games",
-      // 跑 `wrangler d1 create krkr2-games`，把返回的 uuid 换掉这里。
-      // 本地开发（--local）不校验这个值，随便填也能跑；部署前必须换成真的。
-      "database_id": "REPLACE_ME_RUN_wrangler_d1_create",
+      "database_id": "f60c4ae0-6a73-4bfb-bb41-d600eb3403da",
       "migrations_dir": "migrations"
     }
   ],
@@ -28,8 +28,7 @@
   "kv_namespaces": [
     {
       "binding": "RATE_LIMIT",
-      // 跑 `wrangler kv namespace create RATE_LIMIT`，把返回的 id 换掉这里。
-      "id": "REPLACE_ME_RUN_wrangler_kv_namespace_create"
+      "id": "516531dd4ff84e7ab81cb3e190160602"
     }
   ]
 

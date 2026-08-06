@@ -3,7 +3,13 @@
 // 密码哈希与签名密钥都存 Cloudflare Secret，不进 D1/KV —— 改密码就是
 // 重新 `wrangler secret put ADMIN_PASSWORD_HASH`，没有需要维护的用户表。
 
-const ITERATIONS_DEFAULT = 210000;
+// Cloudflare Workers 的 WebCrypto 硬性上限就是 100000：
+// 超过会抛 NotSupportedError("iteration counts above 100000 are not supported")。
+// OWASP 对 PBKDF2-SHA256 的建议值更高（600k），但平台不允许，
+// 这里取平台允许的最大值。verifyPassword 从哈希串里读实际轮数，
+// 所以将来平台放宽后调大这个常量，旧哈希依然能校验。
+const ITERATIONS_DEFAULT = 100000;
+const MAX_ITERATIONS = 100000;
 const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 // __Host- 前缀由浏览器强制：必须 Secure、Path=/、且不带 Domain。
@@ -69,11 +75,22 @@ export async function hashPassword(password, iterations = ITERATIONS_DEFAULT) {
 /** 校验明文密码是否匹配 stored 哈希串。格式不合法一律返回 false，不抛。 */
 export async function verifyPassword(password, stored) {
     if (typeof stored !== 'string') return false;
-    const parts = stored.split('$');
+    // secret 经 `cat file | wrangler secret put` 设置时会带上尾部换行，
+    // 不 trim 的话末段 base64 解不出来，表现为"密码明明对却登录失败"。
+    const parts = stored.trim().split('$');
     if (parts.length !== 4 || parts[0] !== 'pbkdf2') return false;
 
     const iterations = parseInt(parts[1], 10);
     if (!Number.isFinite(iterations) || iterations < 1000) return false;
+    // 超过平台上限的话 deriveBits 会抛 NotSupportedError，
+    // 那是一个 500 而不是"密码错误"。提前挡掉并留下可诊断的日志。
+    if (iterations > MAX_ITERATIONS) {
+        console.error(
+            `[auth] 哈希串里的迭代轮数 ${iterations} 超过 Workers 上限 ${MAX_ITERATIONS}，` +
+            `请用当前版本的 scripts/hash-password.js 重新生成 ADMIN_PASSWORD_HASH`
+        );
+        return false;
+    }
 
     let salt, expected;
     try {

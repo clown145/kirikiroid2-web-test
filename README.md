@@ -38,10 +38,16 @@ npx wrangler d1 create krkr2-games            # 把 uuid 填进 wrangler.jsonc
 npx wrangler kv namespace create RATE_LIMIT   # 把 id 填进 wrangler.jsonc
 npm run db:remote
 
-node scripts/hash-password.js '你的密码'
-npx wrangler secret put ADMIN_PASSWORD_HASH   # 粘贴上一步输出的 pbkdf2$... 串
-npx wrangler secret put SESSION_SECRET        # openssl rand -base64 32
+node scripts/hash-password.js '你的密码' --raw | npx wrangler secret put ADMIN_PASSWORD_HASH
+openssl rand -base64 32 | npx wrangler secret put SESSION_SECRET
 ```
+
+`--raw` 是必要的：`echo`/`console.log` 会带尾部换行，混进 secret 后
+base64 段解不出来，表现为"密码明明对却一直登录失败"。
+
+> PBKDF2 轮数固定 100000 —— **Workers 的硬性上限**，超过会抛
+> `NotSupportedError: iteration counts above 100000 are not supported`。
+> OWASP 对 PBKDF2-SHA256 的建议值更高，但平台不允许。
 
 `wrangler.jsonc` 里的 id 不换掉，部署一定失败（构建结束时会有提示）。
 改密码就是重新 `wrangler secret put ADMIN_PASSWORD_HASH`，没有用户表要维护。

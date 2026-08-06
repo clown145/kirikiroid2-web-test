@@ -23,10 +23,17 @@ if (password.length < 8) {
 
 const hash = await hashPassword(password);
 
+// --raw：只输出哈希本身、不带换行，便于直接管进 wrangler：
+//   node scripts/hash-password.js '密码' --raw | wrangler secret put ADMIN_PASSWORD_HASH
+if (process.argv.includes('--raw')) {
+    process.stdout.write(hash);
+    process.exit(0);
+}
+
 console.log('\n把下面这行整体作为 ADMIN_PASSWORD_HASH 的值：\n');
 console.log(hash);
-console.log('\n设置命令：');
-console.log('  wrangler secret put ADMIN_PASSWORD_HASH');
+console.log('\n设置命令（--raw 避免尾部换行混进 secret）：');
+console.log(`  node scripts/hash-password.js '你的密码' --raw | npx wrangler secret put ADMIN_PASSWORD_HASH`);
 console.log('\n本地开发则写入 .dev.vars（该文件已在 .gitignore 中）：');
 console.log(`  ADMIN_PASSWORD_HASH="${hash}"`);
 console.log('  SESSION_SECRET="$(openssl rand -base64 32)"\n');
