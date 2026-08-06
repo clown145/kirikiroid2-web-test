@@ -164,7 +164,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <!-- 容器即全屏目标：ResizeObserver 观察的也是它，两者对齐 -->
+    <!-- 容器即全屏目标：ResizeObserver 观察的也是它，两者对齐。
+         所有 UI 都必须放在容器**内部** —— 元素全屏后 .stage 进入 top layer，
+         它的兄弟节点会被 ::backdrop 盖住，哪怕 position:fixed + 高 z-index 也没用。
+         手机上一旦如此就彻底没救：没有 hover、没有 F 键，退不出也开不了存档。 -->
     <div ref="container" class="stage">
         <!-- 不绑 dblclick 切全屏：galgame 推文本就是快速连点，必然误触发。
              全屏入口只留边缘工具条的按钮和 F 键。 -->
@@ -173,65 +176,65 @@ onUnmounted(() => {
             id="canvas"
             tabindex="-1"
             @contextmenu.prevent />
-    </div>
 
-    <EdgeToolbar
-        :title="displayTitle"
-        :is-fullscreen="isFullscreen"
-        :fullscreen-available="fullscreenAvailable"
-        @exit="exitToGallery"
-        @toggle-fullscreen="toggleFullscreen"
-        @open-saves="showSaves = true" />
+        <EdgeToolbar
+            :title="displayTitle"
+            :is-fullscreen="isFullscreen"
+            :fullscreen-available="fullscreenAvailable"
+            @exit="exitToGallery"
+            @toggle-fullscreen="toggleFullscreen"
+            @open-saves="showSaves = true" />
 
-    <!-- 加载浮层：仅在引擎未跑起来时存在，跑起来后彻底移除，不留任何遮挡 -->
-    <div v-if="busy" class="overlay">
-        <div class="loader">
-            <h1 class="brand">{{ displayTitle }}</h1>
-            <div class="track">
-                <div
-                    class="fill"
-                    :class="{ indeterminate: progress === null }"
-                    :style="progress !== null ? { width: progress + '%' } : null" />
-            </div>
-            <p class="status">{{ statusText }}</p>
-        </div>
-    </div>
-
-    <!-- 本地文件入口 -->
-    <LocalPicker
-        v-if="isLocalMode && phase !== 'running' && phase !== 'loading'"
-        @source="startLocalSource"
-        @cancel="exitToGallery" />
-
-    <!-- 多 xp3 选择 -->
-    <div v-if="xp3Choices" class="modal-backdrop">
-        <div class="modal">
-            <h2>选择启动的档案</h2>
-            <p class="sub">发现多个 .xp3 文件，请选择要启动的那个：</p>
-            <div class="xp3-list">
-                <button v-for="p in xp3Choices" :key="p" class="xp3-item" @click="pickXp3(p)">
-                    <span class="xp3-name">{{ p.substring(p.lastIndexOf('/') + 1) }}</span>
-                    <span class="xp3-dir">{{ p.substring(0, p.lastIndexOf('/')) || '/' }}</span>
-                </button>
+        <!-- 加载浮层：仅在引擎未跑起来时存在，跑起来后彻底移除，不留任何遮挡 -->
+        <div v-if="busy" class="overlay">
+            <div class="loader">
+                <h1 class="brand">{{ displayTitle }}</h1>
+                <div class="track">
+                    <div
+                        class="fill"
+                        :class="{ indeterminate: progress === null }"
+                        :style="progress !== null ? { width: progress + '%' } : null" />
+                </div>
+                <p class="status">{{ statusText }}</p>
             </div>
         </div>
-    </div>
 
-    <SaveSpacePanel v-if="showSaves" @close="showSaves = false" />
+        <!-- 本地文件入口 -->
+        <LocalPicker
+            v-if="isLocalMode && phase !== 'running' && phase !== 'loading'"
+            @source="startLocalSource"
+            @cancel="exitToGallery" />
 
-    <!-- 致命错误 -->
-    <div v-if="errorInfo || fatal" class="modal-backdrop">
-        <div class="modal">
-            <h2>{{ errorInfo?.title || '无法开始游戏' }}</h2>
-            <p class="msg">{{ errorInfo?.message || fatal }}</p>
-            <div class="modal-actions">
-                <button class="btn" @click="exitToGallery">返回游戏库</button>
-                <button
-                    v-if="errorInfo?.allowUpdate"
-                    class="btn btn-primary"
-                    @click="() => window.KrKr2PWA?.forceUpdate?.() ?? location.reload()">
-                    强制更新并重载
-                </button>
+        <!-- 多 xp3 选择 -->
+        <div v-if="xp3Choices" class="modal-backdrop">
+            <div class="modal">
+                <h2>选择启动的档案</h2>
+                <p class="sub">发现多个 .xp3 文件，请选择要启动的那个：</p>
+                <div class="xp3-list">
+                    <button v-for="p in xp3Choices" :key="p" class="xp3-item" @click="pickXp3(p)">
+                        <span class="xp3-name">{{ p.substring(p.lastIndexOf('/') + 1) }}</span>
+                        <span class="xp3-dir">{{ p.substring(0, p.lastIndexOf('/')) || '/' }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <SaveSpacePanel v-if="showSaves" @close="showSaves = false" />
+
+        <!-- 致命错误 -->
+        <div v-if="errorInfo || fatal" class="modal-backdrop">
+            <div class="modal">
+                <h2>{{ errorInfo?.title || '无法开始游戏' }}</h2>
+                <p class="msg">{{ errorInfo?.message || fatal }}</p>
+                <div class="modal-actions">
+                    <button class="btn" @click="exitToGallery">返回游戏库</button>
+                    <button
+                        v-if="errorInfo?.allowUpdate"
+                        class="btn btn-primary"
+                        @click="() => window.KrKr2PWA?.forceUpdate?.() ?? location.reload()">
+                        强制更新并重载
+                    </button>
+                </div>
             </div>
         </div>
     </div>

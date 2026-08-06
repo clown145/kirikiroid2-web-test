@@ -70,10 +70,14 @@ async function newPage(touch) {
     return page;
 }
 
+// 等工具条**真正落位**，而不只是 display 变了。
+// 它是 translateY(-100%) 滑入的，动画途中 rect.top 还是负数 ——
+// 这时去点里面的按钮会点到视口外面，全屏死活进不去。
 const waitForToolbar = (page) =>
     page.waitForFunction(() => {
         const bar = document.querySelector('.bar');
-        return bar && getComputedStyle(bar).display !== 'none';
+        if (!bar || getComputedStyle(bar).display === 'none') return false;
+        return bar.getBoundingClientRect().top >= 0;
     }, { timeout: 3000 }).then(() => true).catch(() => false);
 
 /** 复现"游戏进行中"的 DOM：把 v-if 会移除的加载浮层/模态摘掉。 */
@@ -132,6 +136,74 @@ const enterRunningState = (page) => page.evaluate(() => {
     await page.touchscreen.touchMove(195, 60);
     await page.touchscreen.touchEnd();
     ok('进行中：顶边下滑能展开工具条', await waitForToolbar(page));
+    await page.close();
+}
+
+// --- 全屏之后仍能唤出（回归：曾经彻底唤不出）---
+//
+// 元素全屏会把 .stage 提升到 top layer，它的**兄弟**节点被 ::backdrop 盖死，
+// position:fixed + 高 z-index 都救不回来。手机上没 hover 也没 F 键，
+// 于是退不出、开不了存档，只能杀进程。
+// 所以这里断言的是结构：把手必须是全屏元素的后代。
+{
+    const page = await newPage(true);
+    await page.goto(`${BASE}/play/${GAME_ID}`, { waitUntil: 'networkidle2' });
+    await page.waitForSelector('.handle', { timeout: 8000 }).catch(() => {});
+    await enterRunningState(page);
+
+    // 先唤出工具条，再点它的全屏按钮 —— requestFullscreen 需要真实手势
+    const h = await page.$('.handle');
+    const hb = await h.boundingBox();
+    await page.touchscreen.tap(hb.x + hb.width / 2, hb.y + hb.height / 2);
+    await waitForToolbar(page);
+
+    // 用 getBoundingClientRect 而不是 elementHandle.boundingBox()：
+    // deviceScaleFactor=3 下后者给的坐标和 touchscreen.tap 期望的视口坐标对不上，
+    // 点了个空位置，全屏自然进不去。
+    const fsBox = await page.evaluate(() => {
+        const btn = [...document.querySelectorAll('.bar button')]
+            .find((e) => /全屏/.test(e.textContent));
+        return btn ? btn.getBoundingClientRect().toJSON() : null;
+    });
+    ok('全屏：工具条里有全屏按钮', fsBox);
+    if (fsBox) {
+        await page.touchscreen.tap(fsBox.x + fsBox.width / 2, fsBox.y + fsBox.height / 2);
+    }
+    await new Promise((r) => setTimeout(r, 900));
+
+    const fs = await page.evaluate(() => {
+        const el = document.fullscreenElement || document.webkitFullscreenElement;
+        return { active: !!el, isStage: !!el?.classList.contains('stage') };
+    });
+    ok('全屏：已进入元素全屏', fs.active);
+    ok('全屏：全屏目标是 .stage', fs.isStage);
+
+    // 等自动收起（3s），把手应重新出现
+    await new Promise((r) => setTimeout(r, 3400));
+
+    const reach = await page.evaluate(() => {
+        const el = document.fullscreenElement || document.webkitFullscreenElement;
+        const handle = document.querySelector('.handle');
+        if (!handle) return { handle: false };
+        const r = handle.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        return {
+            handle: true,
+            // 关键断言：不在全屏子树里就一定被 ::backdrop 吞掉
+            inFsSubtree: !!el && el.contains(handle),
+            onTop: !!(hit && hit.closest('.handle'))
+        };
+    });
+    ok('全屏：把手仍然渲染', reach.handle);
+    ok('全屏：把手在全屏子树内（否则被 ::backdrop 吞掉）', reach.inFsSubtree);
+    ok('全屏：把手未被遮挡（命中测试）', reach.onTop);
+
+    if (reach.handle) {
+        const h2 = await page.$('.handle');
+        const b2 = await h2.boundingBox();
+        await page.touchscreen.tap(b2.x + b2.width / 2, b2.y + b2.height / 2);
+        ok('全屏：点把手能再次展开工具条', await waitForToolbar(page));
+    }
     await page.close();
 }
 
